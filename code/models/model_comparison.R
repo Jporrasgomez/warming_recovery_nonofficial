@@ -241,6 +241,12 @@ emmeans_gam_summary_table <- bind_rows(results_gam_list)
 
 results_glmm_list <- list()
 
+glmm_richness <- glmmTMB(
+  richness ~ treatment * sampling + ar1(sampling_factor + 0 | plot),
+  data = arkaute,
+  family = genpois(link = "log")
+)
+
 glmm_richness <- glmmTMB(richness ~ treatment + (1 | sampling),
                          data = arkaute,
                          family = genpois(link = "log"))
