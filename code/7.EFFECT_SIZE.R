@@ -30,7 +30,26 @@ arkaute_no0 <- arkaute %>%
 ## We use a modification of Geary Test proposed by Lajeunesse 2015
 
 # 1. Geary test at Treatment level 
-geary_test_treatment <- arkaute_no0 %>%
+
+
+plot_level <- data %>% 
+  #filter(year == "2024") |> 
+  filter(!is.na(.data[[variable]])) %>% 
+  group_by(plot, treatment) %>% 
+  summarise(plot_mean = mean(.data[[variable]]), .groups = "drop")
+
+# Step 2: Compute true treatment-level mean, sd, and plot count (N = 4)
+effect <- plot_level %>% 
+  group_by(treatment) %>% 
+  summarise(
+    mean = mean(plot_mean),
+    sd = sd(plot_mean),
+    n = n(),
+    .groups = "drop"
+  )
+
+
+geary_test_treatment0 <- arkaute_no0 %>%
   pivot_longer(
     cols = c(-date, -year, - date_label, -date_label_noyear, -sampling, -plot, -treatment,
              -OTC, -perturbation),
@@ -38,12 +57,19 @@ geary_test_treatment <- arkaute_no0 %>%
     names_to = "variable"
   ) %>% 
   mutate(value = ifelse(variable == "Y_zipf", value * -1, value)) %>%
-  group_by(treatment, variable) %>% 
+  group_by(treatment, variable, plot) %>% 
   summarize(
+    mean_plot = mean(value, na.rm = T), 
+  )
+
+geary_test_treatment <- geary_test_treatment0 |> 
+  group_by(treatment, variable) %>% 
+  summarise(
+    mean_variable = mean(mean_plot),
+    sd_variable = sd(mean_plot),
     n = n(),
-    mean_variable = mean(value, na.rm = T), 
-    sd_variable = sd(value, na.rm = T)
-  ) %>% 
+    .groups = "drop"
+  ) |> 
   mutate(geary_test_value = (mean_variable/sd_variable) *((4 * n^1.5) / (1 + 4 * n))) %>% 
   mutate(geary_test_outcome = ifelse(geary_test_value >= 3, paste0("TRUE"), paste0("FALSE")))
 
@@ -96,7 +122,7 @@ variables <-
    ) 
 
 # Charging functions
-source("code/functions/eff_size_LRR_funcion_delta.R")      # Function of LRR at aggregated level
+source("code/functions/eff_size_LRR_funcion_delta.R")      # Function of LRR at aggregated level CORRECTED
 #source("code/functions/eff_size_LRR_function.R")      # Function of LRR at aggregated level
 source("code/functions/new_dynamics.R")               # Function of LRR at dynamics level
 source("code/functions/gg_aggregated_function_2.R")   # Function for visualization of aggregated analysis
@@ -138,8 +164,8 @@ dyn <- do.call(rbind, list_dyn) %>%
     )
   )
 
-#agg %>%   write.csv("results/effect_size_aggregated.csv")
-#dyn %>%   write.csv("results/effect_size_dynamics.csv")
+agg %>%   write.csv("results/effect_size_aggregated.csv")
+dyn %>%   write.csv("results/effect_size_dynamics.csv")
 
 
 
@@ -300,6 +326,8 @@ gg_wp <-
 
 }
 
+View(geary_test_treatment)
+View(false_cases_sampling)
 print(gg_control) 
 print(gg_wp) 
 

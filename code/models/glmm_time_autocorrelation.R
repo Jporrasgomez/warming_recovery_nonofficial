@@ -66,6 +66,8 @@ diagnose_glmm <- function(model, data = NULL, group_var = NULL) {
 }
 
 
+
+{
 ############# GLMM ##############
 
 
@@ -85,11 +87,7 @@ em_treat_richness <- emmeans(glmm_richness, ~ treatment, type = "response")
 pairs(em_treat_richness, adjust = "tukey")
 #Specific contrast wp-p (direct contrast)
 contrast(em_treat_richness, method = list("p vs wp" = c(c = 0, p = 1, w = 0, wp = -1)))
-
-richness_model <- as.data.frame(pairs(em_treat, adjust = "tukey")) |> 
-  mutate(variable = paste0("richness"),
-         family = paste0("gaussian"))
-
+as.data.frame(pairs(em_treat_richness, adjust = "tukey"))
 # Effect of treatment*samplings on the variable
 Anova(glmm_richness, type = "II")
 
@@ -329,10 +327,15 @@ contrast(
 
 arkaute_biomass <- arkaute |> filter(sampling != "1")
 hist(arkaute$biomass_mice_lm)
+quantile(arkaute$biomass_mice_lm)
+min(arkaute$biomass_mice_lm)
+
+
+arkaute$sampling <- relevel(arkaute$sampling, ref = "2")
 glmm_biomass <- glmmTMB(
   biomass_mice_lm ~ treatment * sampling + ar1(sampling + 0 | plot),
-  data = arkaute_biomass,
-  family = Gamma(link = "log")
+  data = arkaute,
+  family = tweedie(link = "log")
 )
 
 diagnose_glmm(glmm_biomass)
@@ -364,49 +367,207 @@ contrast(
 )
 
 
-
+}
 
 ## Cambiar nombres de contrastes (p_vs_c, por ejemplo).
 ## Añadir familias
 ## Añadir problemas de dispersion y tal
 ## Juntar con resultados actualiados de log response ratio. 
-
+{
 model_list <- list()
 
 model_list[[1]] <- 
   as.data.frame(pairs(em_treat_richness, adjust = "tukey")
-                ) |> mutate(variable = paste0("richness")
+                ) |>
+  mutate(variable = paste0("richness"),
+         AIC = AIC(glmm_richness)
                 ) |> 
   rename(estimate_ratio = estimate)
+
 model_list[[2]] <- 
   as.data.frame(pairs(em_treat_abundance, adjust = "tukey")
-                ) |> mutate(variable = paste0("abundance"))|> 
+                ) |> 
+  mutate(variable = paste0("abundance"),
+         AIC = AIC(glmm_abundance)
+         )|> 
   rename(estimate_ratio = estimate)
+
 model_list[[3]]  <- 
   as.data.frame(pairs(em_treat_evenness, adjust = "tukey")
-  ) |> mutate(variable = paste0("evenness"))|> 
+  ) |> mutate(
+    variable = paste0("evenness"),
+    AIC = AIC(glmm_evenness)
+    )|> 
   rename(estimate_ratio = estimate)
+
 model_list[[4]] <- 
   as.data.frame(pairs(em_treat_sla, adjust = "tukey")
-  ) |> mutate(variable = paste0("SLA"))|> 
+  ) |> mutate(
+    variable = paste0("SLA"),
+    AIC = AIC(glmm_sla)
+    )|> 
   rename(estimate_ratio = ratio) |> 
   select(-null)
+
 model_list[[5]]  <- 
   as.data.frame(pairs(em_treat_ldmc, adjust = "tukey")
-  ) |> mutate(variable = paste0("LDMC"))|> 
+  ) |> mutate(
+    variable = paste0("LDMC"),
+    AIC = AIC(glmm_LDMC)
+    )|> 
   rename(estimate_ratio = estimate)
+
 model_list[[6]]  <- 
   as.data.frame(pairs(em_treat_leafN, adjust = "tukey")
-  ) |> mutate(variable = paste0("leafN"))|> 
+  ) |> 
+  mutate(variable = paste0("leafN"),
+         AIC = AIC(glmm_leafN)
+         )|> 
   rename(estimate_ratio = estimate)
+
 model_list[[7]]  <- 
   as.data.frame(pairs(em_treat_biomass, adjust = "tukey")
-  ) |> mutate(variable = paste0("biomass"))|> 
+  ) |> mutate(
+    variable = paste0("biomass"),
+    AIC = AIC(glmm_biomass)
+    )|> 
   rename(estimate_ratio = ratio) |> 
   select(-null)
 
 
-model_result <- do.call(rbind, model_list)
+model_result <- do.call(rbind, model_list) |> 
+  filter(!contrast %in% c("p - w", "p / w", "w - wp", "w /wp")) |> 
+  rename(diff_value = estimate_ratio,
+         p_value = p.value) |> 
+  mutate(
+    effect_sign = ifelse(diff_value > 0 , "negative", "positive"), 
+    effect_significance = case_when(
+      p_value < 0.05                     ~ "significant",
+      p_value >= 0.05  & p_value < 0.10  ~ "marginal",
+      TRUE                               ~ "non-significant"
+    ),
+    eff_descriptor = case_when(
+      contrast %in% c("c - p", "c / p")    ~ "p_vs_c", 
+      contrast %in% c("c - w" , "c / w")   ~ "w_vs_c", 
+      contrast %in% c("c - wp", "c / wp")  ~ "wp_vs_c", 
+      contrast %in% c("p - wp", "p / wp")  ~ "wp_vs_p"
+    ),
+    model = paste0("GLMM")
+  ) |>  
+  select(-contrast)
+
+}
+
+# Actualizar 
+lrr_table <- read.csv("results/effect_size_aggregated.csv") |> 
+  select(-scale, -X) |> 
+  rename(diff_value = eff_value) |> 
+  mutate(model = paste0("LRR"),
+         variable = as.factor(variable)) |> 
+  filter(!variable %in% c("biomass_raw", "biomass_mice")) %>%
+  mutate(
+    variable = fct_recode(variable,
+                          "evenness" = "Y_zipf",
+                          "biomass"  = "biomass_mice_lm"
+    ),
+    variable = droplevels(variable),
+    effect_sign = ifelse(diff_value > 0 , "positive", "negative"),
+    effect_significance = case_when(
+      null_effect == "YES" ~ "non-significant",
+      TRUE                 ~ "significant", 
+    )
+  ) |> 
+  select(-upper_limit, -lower_limit, -null_effect)
+
+
+
+
+models <- full_join(model_result, lrr_table) |> 
+  mutate(variable.bis = variable) |> 
+  select(variable, eff_descriptor, model, AIC, 
+          p_value, effect_significance, diff_value,
+         effect_sign, variable.bis
+  )
+
+
+models_p_vs_c  <- models |> filter (eff_descriptor == "p_vs_c")
+models_w_vs_c  <- models |> filter (eff_descriptor == "w_vs_c")
+models_wp_vs_c <- models |> filter (eff_descriptor == "wp_vs_c")
+models_wp_vs_p <- models |> filter (eff_descriptor == "wp_vs_p")
+
+palette_sig <- 
+  c("significant" = "blue", "marginal" = "orange", "non-significant" = "grey")
+palette_shape <- c(
+  "positive" = "+",  # o pch 43 / 3
+  "negative" = "-"   # o pch 45
+)
+
+models |> 
+  filter(eff_descriptor == "wp_vs_p") |> 
+  ggplot(aes(x = model, y = variable, color = effect_significance, shape = effect_sign,
+             label = round(p_value, 2))) +
+  geom_point(size = 10) +
+  #geom_label_repel(show.legend = FALSE) +
+  scale_color_manual(values = palette_sig) +
+  scale_shape_manual(values = palette_shape) +
+  labs(title = "Warming effect on recovery (wp vs p)", x = "Statistical analysis", y = NULL,
+       shape = "Sign of effect", color = "Effect stat. significance")
+
+models |> 
+  filter(eff_descriptor == "p_vs_c") |> 
+  ggplot(aes(x = model, y = variable, color = effect_significance, shape = effect_sign)) +
+  geom_point(size = 10) +
+  scale_color_manual(values = palette_sig) +
+  scale_shape_manual(values = palette_shape) +
+  labs(title = "Perturbation effect (p vs c)", x = "Statistical analysis", y = NULL,
+       shape = "Sign of effect", color = "Effect stat. significance")
+
+
+models |> 
+  filter(eff_descriptor == "wp_vs_c") |> 
+  ggplot(aes(x = model, y = variable, color = effect_significance, shape = effect_sign)) +
+  geom_point(size = 10) +
+  scale_color_manual(values = palette_sig) +
+  scale_shape_manual(values = palette_shape) +
+  labs(title = "Combined effect (wp vs c)", x = "Statistical analysis", y = NULL,
+       shape = "Sign of effect", color = "Effect stat. significance")
+
+
+models |> 
+  filter(eff_descriptor == "w_vs_c") |> 
+  ggplot(aes(x = model, y = variable, color = effect_significance, shape = effect_sign)) +
+  geom_point(size = 10) +
+  scale_color_manual(values = palette_sig) +
+  scale_shape_manual(values = palette_shape) +
+  labs(title = "Warming effect on assembly (w vs c)", x = "Statistical analysis", y = NULL,
+       shape = "Sign of effect", color = "Effect stat. significance")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -444,9 +605,74 @@ model_time_result[[7]]  <-
   rename(estimate_ratio = ratio) |> 
   select(-null)
 
-model_time <- do.call(rbind, model_time_result)
+model_time <- do.call(rbind, model_time_result) |> 
+  filter(!contrast %in% c("p - w", "p / w", "w - wp", "w /wp")) |> 
+  rename(diff_value = estimate_ratio,
+         p_value = p.value) |> 
+  mutate(
+    effect_sign = ifelse(diff_value > 0 , "negative", "positive"), 
+    effect_significance = case_when(
+      p_value < 0.05                     ~ "significant",
+      p_value >= 0.05  & p_value < 0.10  ~ "marginal",
+      TRUE                               ~ "non-significant"
+    ),
+    eff_descriptor = case_when(
+      contrast %in% c("c - p", "c / p")    ~ "p_vs_c", 
+      contrast %in% c("c - w" , "c / w")   ~ "w_vs_c", 
+      contrast %in% c("c - wp", "c / wp")  ~ "wp_vs_c", 
+      contrast %in% c("p - wp", "p / wp")  ~ "wp_vs_p"
+    ),
+    model = paste0("GLMM")
+  ) |>  
+  select(-contrast)
 
 
 
 
+
+lrr_table_dyn <- read.csv("results/effect_size_dynamics.csv") |> 
+  select(-scale, -X) |> 
+  rename(diff_value = eff_value) |> 
+  mutate(model = paste0("LRR"),
+         variable = as.factor(variable)) |> 
+  filter(!variable %in% c("biomass_raw", "biomass_mice"),
+         sampling != "0") %>%
+  mutate(
+    variable = fct_recode(variable,
+                          "evenness" = "Y_zipf",
+                          "biomass"  = "biomass_mice_lm"
+    ),
+    variable = droplevels(variable),
+    effect_sign = ifelse(diff_value > 0 , "positive", "negative"),
+    effect_significance = case_when(
+      null_effect == "YES" ~ "non-significant",
+      TRUE                 ~ "significant", 
+    ),
+    sampling = as.factor(sampling)
+  ) |> 
+  select(-upper_limit, -lower_limit, -null_effect)
+
+
+
+
+
+models_dynamics <- full_join(model_time, lrr_table_dyn) |> 
+  mutate(variable.bis = variable) |> 
+  select(variable, sampling, eff_descriptor, model, 
+         p_value, effect_significance, diff_value,
+         effect_sign, variable.bis
+  ) |> 
+  mutate(
+    variable_model = paste0(variable, "-", model)
+  )
+
+
+# Juntar en una columna variable-model para usar en el eje Y y así verlo todo junto
+models_dynamics |> 
+  filter(eff_descriptor == "wp_vs_p") |> 
+  ggplot(aes(x = sampling, y = variable_model, color = effect_significance, shape = effect_sign)) +
+  #facet_wrap(~model) + 
+  geom_point(size = 8) +
+  scale_color_manual(values = palette_sig) +
+  scale_shape_manual(values = palette_shape) 
 
