@@ -674,5 +674,48 @@ models_dynamics |>
   #facet_wrap(~model) + 
   geom_point(size = 8) +
   scale_color_manual(values = palette_sig) +
-  scale_shape_manual(values = palette_shape) 
+  scale_shape_manual(values = palette_shape) +
+  labs(title = "Warming effect on recovery (wp/p)", 
+       x = "Sampling", 
+       y = "Variable and model",
+       color = "Effect significance",
+       shape = "Sign of the effect")
+
+
+models_dynamics |> 
+  filter(eff_descriptor == "p_vs_c") |> 
+  ggplot(aes(x = sampling, y = variable_model, color = effect_significance, shape = effect_sign)) +
+  #facet_wrap(~model) + 
+  geom_point(size = 8) +
+  scale_color_manual(values = palette_sig) +
+  scale_shape_manual(values = palette_shape) +
+  labs(title = "Recovery(p/c)", 
+       x = "Sampling", 
+       y = "Variable and model")
+
+
+
+models_dynamics |> 
+  filter(eff_descriptor == "w_vs_c") |> 
+  ggplot(aes(x = sampling, y = variable_model, color = effect_significance, shape = effect_sign)) +
+  #facet_wrap(~model) + 
+  geom_point(size = 8) +
+  scale_color_manual(values = palette_sig) +
+  scale_shape_manual(values = palette_shape) +
+  labs(title = "Warming effect(w/c)", 
+       x = "Sampling", 
+       y = "Variable and model")
+
+
+
+models_dynamics |> 
+  filter(eff_descriptor == "wp_vs_c") |> 
+  ggplot(aes(x = sampling, y = variable_model, color = effect_significance, shape = effect_sign)) +
+  #facet_wrap(~model) + 
+  geom_point(size = 8) +
+  scale_color_manual(values = palette_sig) +
+  scale_shape_manual(values = palette_shape) +
+  labs(title = "Combined effect(wp/c)", 
+       x = "Sampling", 
+       y = "Variable and model")
 
