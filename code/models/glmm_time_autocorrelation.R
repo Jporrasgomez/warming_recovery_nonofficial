@@ -31,11 +31,12 @@ arkaute <- read.csv("data/processed_data/arkaute.csv") %>%
   mutate(
     year      = factor(year),
     date      = ymd(date),
-    sampling  = factor(sampling),
+    sampling = factor(sampling, levels = as.character(sort(unique(as.numeric(as.character(sampling)))))),
     plot      = factor(plot),
     treatment = factor(treatment)
   ) %>%
-  filter(sampling != "0")
+  filter(sampling != "0") |> 
+  arrange(plot, sampling)  # Necessary for autocorrelation in models
 
 
 # databases for models:
@@ -73,7 +74,7 @@ diagnose_glmm <- function(model, data = NULL, group_var = NULL) {
 
 ## Richness ## 
 
-#arkaute_richness <- arkaute |> filter(sampling != "1")
+arkaute_richness <- arkaute |> filter(sampling != "1")
 glmm_richness <- glmmTMB(
   richness ~ treatment * sampling + ar1(sampling + 0 | plot),
   data = arkaute,
@@ -334,8 +335,8 @@ min(arkaute$biomass_mice_lm)
 arkaute$sampling <- relevel(arkaute$sampling, ref = "2")
 glmm_biomass <- glmmTMB(
   biomass_mice_lm ~ treatment * sampling + ar1(sampling + 0 | plot),
-  data = arkaute,
-  family = tweedie(link = "log")
+  data = arkaute_biomass,
+  family = Gamma(link = "log")
 )
 
 diagnose_glmm(glmm_biomass)
@@ -380,72 +381,83 @@ model_list[[1]] <-
   as.data.frame(pairs(em_treat_richness, adjust = "tukey")
                 ) |>
   mutate(variable = paste0("richness"),
-         AIC = AIC(glmm_richness)
+         AIC = AIC(glmm_richness),
+         estimate_type = "substract"
                 ) |> 
-  rename(estimate_ratio = estimate)
+  rename(estimate = estimate)
 
 model_list[[2]] <- 
   as.data.frame(pairs(em_treat_abundance, adjust = "tukey")
                 ) |> 
   mutate(variable = paste0("abundance"),
-         AIC = AIC(glmm_abundance)
+         AIC = AIC(glmm_abundance),
+         estimate_type = "substract"
          )|> 
-  rename(estimate_ratio = estimate)
+  rename(estimate = estimate)
 
 model_list[[3]]  <- 
   as.data.frame(pairs(em_treat_evenness, adjust = "tukey")
   ) |> mutate(
     variable = paste0("evenness"),
-    AIC = AIC(glmm_evenness)
+    AIC = AIC(glmm_evenness),
+    estimate_type = "substract"
     )|> 
-  rename(estimate_ratio = estimate)
+  rename(estimate = estimate)
 
 model_list[[4]] <- 
   as.data.frame(pairs(em_treat_sla, adjust = "tukey")
   ) |> mutate(
     variable = paste0("SLA"),
-    AIC = AIC(glmm_sla)
+    AIC = AIC(glmm_sla),
+    estimate_type = "ratio"
     )|> 
-  rename(estimate_ratio = ratio) |> 
+  rename(estimate = ratio) |> 
   select(-null)
 
 model_list[[5]]  <- 
   as.data.frame(pairs(em_treat_ldmc, adjust = "tukey")
   ) |> mutate(
     variable = paste0("LDMC"),
-    AIC = AIC(glmm_LDMC)
+    AIC = AIC(glmm_LDMC),
+    estimate_type = "substract"
     )|> 
-  rename(estimate_ratio = estimate)
+  rename(estimate = estimate)
 
 model_list[[6]]  <- 
   as.data.frame(pairs(em_treat_leafN, adjust = "tukey")
   ) |> 
   mutate(variable = paste0("leafN"),
-         AIC = AIC(glmm_leafN)
+         AIC = AIC(glmm_leafN),
+         estimate_type = "substract"
          )|> 
-  rename(estimate_ratio = estimate)
+  rename(estimate = estimate)
 
 model_list[[7]]  <- 
   as.data.frame(pairs(em_treat_biomass, adjust = "tukey")
   ) |> mutate(
     variable = paste0("biomass"),
-    AIC = AIC(glmm_biomass)
+    AIC = AIC(glmm_biomass),
+    estimate_type = "ratio"
     )|> 
-  rename(estimate_ratio = ratio) |> 
+  rename(estimate = ratio) |> 
   select(-null)
 
 
 model_result <- do.call(rbind, model_list) |> 
-  filter(!contrast %in% c("p - w", "p / w", "w - wp", "w /wp")) |> 
-  rename(diff_value = estimate_ratio,
-         p_value = p.value) |> 
+  filter(!contrast %in% c("p - w", "p / w", "w - wp", "w / wp")) |> 
+  rename(p_value = p.value) |> 
   mutate(
-    effect_sign = ifelse(diff_value > 0 , "negative", "positive"), 
+    effect_sign = case_when(
+      estimate_type == "substract" & estimate < 0 ~ "positive",
+      estimate_type == "substract" & estimate > 0 ~ "negative",
+      estimate_type == "ratio" & estimate > 1     ~ "negative", 
+      estimate_type == "ratio" & estimate < 1     ~ "positive"
+      ),
     effect_significance = case_when(
       p_value < 0.05                     ~ "significant",
       p_value >= 0.05  & p_value < 0.10  ~ "marginal",
       TRUE                               ~ "non-significant"
-    ),
+      ),
     eff_descriptor = case_when(
       contrast %in% c("c - p", "c / p")    ~ "p_vs_c", 
       contrast %in% c("c - w" , "c / w")   ~ "w_vs_c", 
@@ -456,12 +468,12 @@ model_result <- do.call(rbind, model_list) |>
   ) |>  
   select(-contrast)
 
-}
+
 
 # Actualizar 
 lrr_table <- read.csv("results/effect_size_aggregated.csv") |> 
   select(-scale, -X) |> 
-  rename(diff_value = eff_value) |> 
+  rename(estimate = eff_value) |> 
   mutate(model = paste0("LRR"),
          variable = as.factor(variable)) |> 
   filter(!variable %in% c("biomass_raw", "biomass_mice")) %>%
@@ -471,7 +483,7 @@ lrr_table <- read.csv("results/effect_size_aggregated.csv") |>
                           "biomass"  = "biomass_mice_lm"
     ),
     variable = droplevels(variable),
-    effect_sign = ifelse(diff_value > 0 , "positive", "negative"),
+    effect_sign = ifelse(estimate > 0 , "positive", "negative"),
     effect_significance = case_when(
       null_effect == "YES" ~ "non-significant",
       TRUE                 ~ "significant", 
@@ -485,9 +497,10 @@ lrr_table <- read.csv("results/effect_size_aggregated.csv") |>
 models <- full_join(model_result, lrr_table) |> 
   mutate(variable.bis = variable) |> 
   select(variable, eff_descriptor, model, AIC, 
-          p_value, effect_significance, diff_value,
+          p_value, effect_significance, estimate,
          effect_sign, variable.bis
   )
+
 
 
 models_p_vs_c  <- models |> filter (eff_descriptor == "p_vs_c")
@@ -502,6 +515,9 @@ palette_shape <- c(
   "negative" = "-"   # o pch 45
 )
 
+}
+
+
 models |> 
   filter(eff_descriptor == "wp_vs_p") |> 
   ggplot(aes(x = model, y = variable, color = effect_significance, shape = effect_sign,
@@ -515,8 +531,10 @@ models |>
 
 models |> 
   filter(eff_descriptor == "p_vs_c") |> 
-  ggplot(aes(x = model, y = variable, color = effect_significance, shape = effect_sign)) +
+  ggplot(aes(x = model, y = variable, color = effect_significance, shape = effect_sign,
+             label = round(p_value, 2))) +
   geom_point(size = 10) +
+  geom_label_repel(show.legend = FALSE) +
   scale_color_manual(values = palette_sig) +
   scale_shape_manual(values = palette_shape) +
   labs(title = "Perturbation effect (p vs c)", x = "Statistical analysis", y = NULL,
@@ -525,8 +543,10 @@ models |>
 
 models |> 
   filter(eff_descriptor == "wp_vs_c") |> 
-  ggplot(aes(x = model, y = variable, color = effect_significance, shape = effect_sign)) +
+  ggplot(aes(x = model, y = variable, color = effect_significance, shape = effect_sign,
+             label = round(p_value, 2))) +
   geom_point(size = 10) +
+  #geom_label_repel(show.legend = FALSE) +
   scale_color_manual(values = palette_sig) +
   scale_shape_manual(values = palette_shape) +
   labs(title = "Combined effect (wp vs c)", x = "Statistical analysis", y = NULL,
@@ -535,8 +555,10 @@ models |>
 
 models |> 
   filter(eff_descriptor == "w_vs_c") |> 
-  ggplot(aes(x = model, y = variable, color = effect_significance, shape = effect_sign)) +
+  ggplot(aes(x = model, y = variable, color = effect_significance, shape = effect_sign,
+             label = round(p_value, 2))) +
   geom_point(size = 10) +
+  #geom_label_repel(show.legend = FALSE) +
   scale_color_manual(values = palette_sig) +
   scale_shape_manual(values = palette_shape) +
   labs(title = "Warming effect on assembly (w vs c)", x = "Statistical analysis", y = NULL,
@@ -547,70 +569,87 @@ models |>
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+{
 
 model_time_result <- list()
 
-model_time_result[[1]] <- 
-  as.data.frame(pairs(em_time_richness, adjust = "tukey")
-  ) |> mutate(variable = paste0("richness")
-  ) |> 
-  rename(estimate_ratio = estimate)
-model_time_result[[2]] <- 
-  as.data.frame(pairs(em_time_abundance, adjust = "tukey")
-  ) |> mutate(variable = paste0("abundance"))|> 
-  rename(estimate_ratio = estimate)
-model_time_result[[3]]  <- 
-  as.data.frame(pairs(em_time_evenness, adjust = "tukey")
-  ) |> mutate(variable = paste0("evenness"))|> 
-  rename(estimate_ratio = estimate)
-model_time_result[[4]] <- 
-  as.data.frame(pairs(em_time_sla, adjust = "tukey")
-  ) |> mutate(variable = paste0("SLA"))|> 
-  rename(estimate_ratio = ratio) |> 
-  select(-null)
-model_time_result[[5]]  <- 
-  as.data.frame(pairs(em_time_ldmc, adjust = "tukey")
-  ) |> mutate(variable = paste0("LDMC"))|> 
-  rename(estimate_ratio = estimate)
-model_time_result[[6]]  <- 
-  as.data.frame(pairs(em_time_leafN, adjust = "tukey")
-  ) |> mutate(variable = paste0("leafN"))|> 
-  rename(estimate_ratio = estimate)
-model_time_result[[7]]  <- 
-  as.data.frame(pairs(em_time_biomass, adjust = "tukey")
-  ) |> mutate(variable = paste0("biomass"))|> 
-  rename(estimate_ratio = ratio) |> 
-  select(-null)
+  
+  model_time_result[[1]] <- 
+    as.data.frame(pairs(em_time_richness, adjust = "tukey")
+    ) |>
+    mutate(variable = paste0("richness"),
+           AIC = AIC(glmm_richness),
+           estimate_type = "substract"
+    ) |> 
+    rename(estimate = estimate)
+  
+  model_time_result[[2]] <- 
+    as.data.frame(pairs(em_time_abundance, adjust = "tukey")
+    ) |> 
+    mutate(variable = paste0("abundance"),
+           AIC = AIC(glmm_abundance),
+           estimate_type = "substract"
+    )|> 
+    rename(estimate = estimate)
+  
+  model_time_result[[3]]  <- 
+    as.data.frame(pairs(em_time_evenness, adjust = "tukey")
+    ) |> mutate(
+      variable = paste0("evenness"),
+      AIC = AIC(glmm_evenness),
+      estimate_type = "substract"
+    )|> 
+    rename(estimate = estimate)
+  
+  model_time_result[[4]] <- 
+    as.data.frame(pairs(em_time_sla, adjust = "tukey")
+    ) |> mutate(
+      variable = paste0("SLA"),
+      AIC = AIC(glmm_sla),
+      estimate_type = "ratio"
+    )|> 
+    rename(estimate = ratio) |> 
+    select(-null)
+  
+  model_time_result[[5]]  <- 
+    as.data.frame(pairs(em_time_ldmc, adjust = "tukey")
+    ) |> mutate(
+      variable = paste0("LDMC"),
+      AIC = AIC(glmm_LDMC),
+      estimate_type = "substract"
+    )|> 
+    rename(estimate = estimate)
+  
+  model_time_result[[6]]  <- 
+    as.data.frame(pairs(em_time_leafN, adjust = "tukey")
+    ) |> 
+    mutate(variable = paste0("leafN"),
+           AIC = AIC(glmm_leafN),
+           estimate_type = "substract"
+    )|> 
+    rename(estimate = estimate)
+  
+  model_time_result[[7]]  <- 
+    as.data.frame(pairs(em_time_biomass, adjust = "tukey")
+    ) |> mutate(
+      variable = paste0("biomass"),
+      AIC = AIC(glmm_biomass),
+      estimate_type = "ratio"
+    )|> 
+    rename(estimate = ratio) |> 
+    select(-null)
+  
 
 model_time <- do.call(rbind, model_time_result) |> 
-  filter(!contrast %in% c("p - w", "p / w", "w - wp", "w /wp")) |> 
-  rename(diff_value = estimate_ratio,
-         p_value = p.value) |> 
+  filter(!contrast %in% c("p - w", "p / w", "w - wp", "w / wp")) |> 
+  rename(p_value = p.value) |> 
   mutate(
-    effect_sign = ifelse(diff_value > 0 , "negative", "positive"), 
+    effect_sign = case_when(
+      estimate_type == "substract" & estimate < 0 ~ "positive",
+      estimate_type == "substract" & estimate > 0 ~ "negative",
+      estimate_type == "ratio" & estimate > 1     ~ "negative", 
+      estimate_type == "ratio" & estimate < 1     ~ "positive"
+    ), 
     effect_significance = case_when(
       p_value < 0.05                     ~ "significant",
       p_value >= 0.05  & p_value < 0.10  ~ "marginal",
@@ -666,6 +705,8 @@ models_dynamics <- full_join(model_time, lrr_table_dyn) |>
     variable_model = paste0(variable, "-", model)
   )
 
+
+}
 
 # Juntar en una columna variable-model para usar en el eje Y y así verlo todo junto
 models_dynamics |> 

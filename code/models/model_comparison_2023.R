@@ -33,8 +33,8 @@ arkaute <- read.csv("data/processed_data/arkaute.csv") %>%
     plot      = factor(plot),
     treatment = factor(treatment)
   ) %>%
-  filter(sampling != "0") %>%
-  filter(!(sampling == "1" & treatment %in% c("p", "wp"))) |> 
+  filter(sampling != "0") |> 
+  filter(!(sampling == "1" & treatment %in% c("p", "wp"))) 
   filter(year == 2023)
 
 
