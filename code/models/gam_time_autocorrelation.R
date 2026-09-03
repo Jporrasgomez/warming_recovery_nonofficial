@@ -63,7 +63,6 @@ diagnose_gam <- function(model, data = NULL, group_var = NULL) {
   invisible(sim)
 }
 
-# Muestreos a evaluar en dinámicas temporales
 samplings_eval <- sort(unique(arkaute_evenness$sampling_num))
 
 {
@@ -72,82 +71,55 @@ samplings_eval <- sort(unique(arkaute_evenness$sampling_num))
   ## Richness ## 
   gam_richness <- gam(
     richness ~ treatment + s(sampling_num, by = treatment, k = 10) + s(plot, bs = "re"),
-    data = arkaute_richness,
-    family = gaussian()
-  )
+    data = arkaute_richness, family = gaussian())
   diagnose_gam(gam_richness)
-  
   em_treat_richness <- emmeans(gam_richness, ~ treatment)
   em_time_richness  <- emmeans(gam_richness, ~ treatment | sampling_num, at = list(sampling_num = samplings_eval))
   
   ## Abundance ##
-  gam_abundance <- gam(
-    abundance ~ treatment + s(sampling_num, by = treatment, k = 10) + s(plot, bs = "re"),
-    data = arkaute_abundance,
-    family = gaussian(link = "identity")
-  )
+  gam_abundance <- gam(abundance ~ treatment + s(sampling_num, by = treatment, k = 10) + s(plot, bs = "re"),
+    data = arkaute_abundance, family = gaussian(link = "identity"))
   diagnose_gam(gam_abundance)
-  
   em_treat_abundance <- emmeans(gam_abundance, ~ treatment)
   em_time_abundance  <- emmeans(gam_abundance, ~ treatment | sampling_num, at = list(sampling_num = samplings_eval))
   
   ## Evenness ##
-  gam_evenness <- gam(
-    Y_zipf ~ treatment + s(sampling_num, by = treatment, k = 10) + s(plot, bs = "re"),
-    data = arkaute_evenness,
-    family = gaussian()
-  )
+  gam_evenness <- gam(Y_zipf ~ treatment + s(sampling_num, by = treatment, k = 10) + s(plot, bs = "re"),
+    data = arkaute_evenness, family = gaussian())
   diagnose_gam(gam_evenness)
-  
   em_treat_evenness <- emmeans(gam_evenness, ~ treatment)
   em_time_evenness  <- emmeans(gam_evenness, ~ treatment | sampling_num, at = list(sampling_num = samplings_eval))
   
   ## SLA ##
-  gam_sla <- gam(
-    SLA ~ treatment + s(sampling_num, by = treatment, k = 10) + s(plot, bs = "re"),
-    data = arkaute_sla,
-    family = gaussian(link = "log")
-  )
+  gam_sla <- gam(SLA ~ treatment + s(sampling_num, by = treatment, k = 10) + s(plot, bs = "re"),
+    data = arkaute_sla, family = gaussian(link = "log"))
   diagnose_gam(gam_sla)
-  
   em_treat_sla <- emmeans(gam_sla, ~ treatment, type = "response")
-  em_time_sla  <- emmeans(gam_sla, ~ treatment | sampling_num, at = list(sampling_num = samplings_eval), type = "response")
+  em_time_sla  <- emmeans(gam_sla, ~ treatment | sampling_num, at = list(sampling_num = samplings_eval),
+                          type = "response")
   
   ## LDMC ##
-  gam_ldmc <- gam(
-    LDMC ~ treatment + s(sampling_num, by = treatment, k = 10) + s(plot, bs = "re"),
-    data = arkaute_ldmc,
-    family = gaussian()
-  )
+  gam_ldmc <- gam(LDMC ~ treatment + s(sampling_num, by = treatment, k = 10) + s(plot, bs = "re"),
+    data = arkaute_ldmc, family = gaussian())
   diagnose_gam(gam_ldmc)
-  
   em_treat_ldmc <- emmeans(gam_ldmc, ~ treatment)
   em_time_ldmc  <- emmeans(gam_ldmc, ~ treatment | sampling_num, at = list(sampling_num = samplings_eval))
   
   ## Leaf Nitrogen ##
-  gam_leafN <- gam(
-    leafN ~ treatment + s(sampling_num, by = treatment, k = 10) + s(plot, bs = "re"),
-    data = arkaute_leafN,
-    family = gaussian(link = "identity")
-  )
+  gam_leafN <- gam(leafN ~ treatment + s(sampling_num, by = treatment, k = 10) + s(plot, bs = "re"),
+    data = arkaute_leafN, family = gaussian(link = "identity"))
   diagnose_gam(gam_leafN)
-  
   em_treat_leafN <- emmeans(gam_leafN, ~ treatment)
   em_time_leafN  <- emmeans(gam_leafN, ~ treatment | sampling_num, at = list(sampling_num = samplings_eval))
   
   ## Biomass ##
-  gam_biomass <- gam(
-    biomass_mice_lm ~ treatment + 
-      s(sampling_num, by = treatment, k = 10) + s(plot, bs = "re"),
-    data = arkaute_biomass,
-    family = tw(link = "log")
-  )
-  
-diagnose_gam(gam_biomass)
-em_treat_biomass <-  emmeans(gam_biomass, ~ treatment, type = "response")
-em_time_biomass  <- emmeans(gam_biomass, ~ treatment | sampling_num, at = list(sampling_num = samplings_eval), type = "response")
-#pairs(em_treat_biomass, adjust = "tukey")
-  
+  gam_biomass <- gam(biomass_mice_lm ~ treatment + s(sampling_num, by = treatment, k = 10) + s(plot, bs = "re"),
+    data = arkaute_biomass, family = tw(link = "log"))
+  diagnose_gam(gam_biomass)
+  em_treat_biomass <-  emmeans(gam_biomass, ~ treatment, type = "response")
+  em_time_biomass  <- emmeans(gam_biomass, ~ treatment | sampling_num, at = list(sampling_num = samplings_eval),
+                              type = "response")
+
 }
 
 # --- Extracción y procesamiento de resultados agregados GAM ---

@@ -2,10 +2,6 @@
 
 
 
-
-
-
-
 rm(list = ls(all.names = TRUE))
 
 # Cargar paquetes
@@ -313,6 +309,7 @@ diagnose_gam <- function(model, data = NULL, group_var = NULL) {
 }
 
 
+gg_wpp <- 
 model_comparison |> 
   filter(eff_descriptor == "wp_vs_p") |> 
   ggplot(aes(x = model, y = variable, color = effect_significance, shape = effect_sign,
@@ -322,10 +319,12 @@ model_comparison |>
   scale_color_manual(values = palette_sig) +
   scale_shape_manual(values = palette_shape) +
   labs(title = "Warming effect on recovery (wp vs p)",
-       subtitle = "Model: variable ~ treatment + (1|plot)",
+       subtitle = "Model: variable ~ treatment + (1 | plot)",
        x = "Statistical analysis", y = NULL,
        shape = "Sign of effect", color = "Effect stat. significance")
+print(gg_wpp)
 
+gg_pc <- 
 model_comparison |> 
   filter(eff_descriptor == "p_vs_c") |> 
   ggplot(aes(x = model, y = variable, color = effect_significance, shape = effect_sign,
@@ -335,11 +334,12 @@ model_comparison |>
   scale_color_manual(values = palette_sig) +
   scale_shape_manual(values = palette_shape) +
   labs(title = "Perturbation effect (p vs c)",
-       subtitle = "Model: variable ~ treatment + (1|plot)",
+       subtitle = "Model: variable ~ treatment + (1 | plot)",
        x = "Statistical analysis", y = NULL,
        shape = "Sign of effect", color = "Effect stat. significance")
+print(gg_pc)
 
-
+gg_wpc <- 
 model_comparison |> 
   filter(eff_descriptor == "wp_vs_c") |> 
   ggplot(aes(x = model, y = variable, color = effect_significance, shape = effect_sign,
@@ -349,21 +349,29 @@ model_comparison |>
   scale_color_manual(values = palette_sig) +
   scale_shape_manual(values = palette_shape) +
   labs(title = "Combined effect (wp vs c)",
-       subtitle = "Model: variable ~ treatment + (1|plot)",
+       subtitle = "Model: variable ~ treatment + (1 | plot)",
        x = "Statistical analysis", y = NULL,
        shape = "Sign of effect", color = "Effect stat. significance")
+print(gg_wpc)
 
 
+gg_wc <- 
 model_comparison |> 
   filter(eff_descriptor == "w_vs_c") |> 
   ggplot(aes(x = model, y = variable, color = effect_significance, shape = effect_sign,
              label = round(p_value, 2))) +
   geom_point(size = 10) +
-  #geom_label_repel(show.legend = FALSE) +
+  geom_label_repel(show.legend = FALSE) +
   scale_color_manual(values = palette_sig) +
   scale_shape_manual(values = palette_shape) +
   labs(title = "Warming effect on assembly (w vs c)",
-       subtitle = "Model: variable ~ treatment + (1|plot)",
+       subtitle = "Model: variable ~ treatment + ( 1 |plot)",
        x = "Statistical analysis", y = NULL,
        shape = "Sign of effect", color = "Effect stat. significance")
+print(gg_wc)
 
+
+ggsave("results/model_comparison_wp_vs_p.png", plot = gg_wpp, dpi = 600)
+ggsave("results/model_comparison_p_vs_c.png", plot  = gg_pc, dpi = 600)
+ggsave("results/model_comparison_w_vs_c.png", plot  = gg_wc, dpi = 600)
+ggsave("results/model_comparison_wp_vs_c.png", plot = gg_wpc, dpi = 600)
