@@ -10,7 +10,7 @@ pacman::p_load(
 source("code/palettes_labels.R")
 
 
-{
+#{
   
   theme_set(
     theme_bw() +
@@ -128,8 +128,8 @@ source("code/palettes_labels.R")
   ############# GLMM MODELS ##############################################################
   ## Richness ## 
   glmm_richness <- glmmTMB( richness ~ treatment * sampling + ar1(sampling + 0 | plot),
+                            dispformula = ~ treatment, 
                             data = arkaute_richness,family = genpois())
-  #diagnose_glmm(glmm_richness)
   em_treat_richness <- emmeans(glmm_richness, ~ treatment, type = "response")
   em_time_richness <- emmeans(glmm_richness, ~ treatment | sampling, type = "response")
   
@@ -139,125 +139,114 @@ source("code/palettes_labels.R")
                             dispformula = ~ treatment, # Allows variance/dispersion of treatments to be estimated independently
                             data = arkaute_abundance, family = lognormal(link = "log")
   )
-  diagnose_glmm(glmm_abundance)
   em_treat_abundance <- emmeans(glmm_abundance, ~ treatment, type = "response")
   em_time_abundance <- emmeans(glmm_abundance, ~ treatment | sampling, type = "response")
   
   ## EVENNESS ##
-  # We choose gaussian() family because Y_zipf is a continuos variable of real numbers, and gaussian accepts negative values. Besides,  Y_zipf present a (kind of) symmetrical distribution
   glmm_evenness <- glmmTMB( Y_zipf ~ treatment * poly(sampling_num, 3) + ar1(sampling_f + 0 | plot),
                             data = arkaute_evenness, family = t_family(link = "identity"))
-  diagnose_glmm(glmm_evenness)
   em_treat_evenness <- emmeans(glmm_evenness, ~ treatment, type = "response")
-  em_time_evenness <- emmeans(glmm_evenness, ~ treatment | sampling, type = "response")
+  em_time_evenness <- emmeans(glmm_evenness, ~ treatment | sampling_num,
+    at = list(sampling_num = unique(arkaute$sampling_num)),type = "response")
   
   ## SLA ##
   glmm_sla <- glmmTMB(SLA ~ treatment * poly(sampling_num, 3) + ar1(sampling_f + 0 | plot),
                       dispformula = ~ treatment,
                       data = arkaute_sla, family = lognormal(link = "log"))
-  diagnose_glmm(glmm_sla)
   em_treat_sla <- emmeans(glmm_sla, ~ treatment, type = "response")
-  em_time_sla <- emmeans(glmm_sla, ~ treatment | sampling, type = "response")
+  em_time_sla <- emmeans(glmm_sla, ~ treatment | sampling_num,
+                              at = list(sampling_num = unique(arkaute$sampling_num)),type = "response")
   
   ## LDMC ##
   glmm_LDMC <- glmmTMB( LDMC ~ treatment * poly(sampling_num, 3) + ar1(sampling_f + 0 | plot),
                         dispformula = ~treatment + poly(sampling_num, 2), 
                         data = arkaute_ldmc, family = lognormal(link = "log"))
-  #diagnose_glmm(glmm_LDMC)
   em_treat_ldmc<- emmeans(glmm_LDMC, ~ treatment, type = "response")
-  em_time_ldmc <- emmeans(glmm_LDMC, ~ treatment | sampling, type = "response")
+  em_time_ldmc <- emmeans(glmm_LDMC, ~ treatment | sampling_num,
+                         at = list(sampling_num = unique(arkaute$sampling_num)),type = "response")
   
   ## Leaf nitrogen ##
-  glmm_leafN <- glmmTMB(leafN ~ treatment * sampling + ar1(sampling + 0 | plot),
-                        data = arkaute_leafN, family = gaussian(link = "identity"))
-  #diagnose_glmm(glmm_leafN)
+  glmm_leafN <-  glmmTMB(leafN ~ treatment * poly(sampling_num, 3) + ar1(sampling_f + 0 | plot),
+                         dispformula = ~treatment, 
+                         data = arkaute_leafN, family = gaussian(link = "identity"))
   em_treat_leafN <- emmeans(glmm_leafN, ~ treatment, type = "response")
-  em_time_leafN <- emmeans(glmm_leafN, ~ treatment | sampling, type = "response")
+  em_time_leafN <- emmeans(glmm_leafN, ~ treatment | sampling_num,
+                          at = list(sampling_num = unique(arkaute$sampling_num)),type = "response")
   
   ### BIOMASS ###
   glmm_biomass <- glmmTMB(biomass_mice_lm ~ treatment * sampling + ar1(sampling + 0 | plot),
+                          dispformula = ~treatment,
                           data = arkaute_biomass,  family = Gamma(link = "log"))
-  #diagnose_glmm(glmm_biomass)
   em_treat_biomass <- emmeans(glmm_biomass, ~ treatment, type = "response")
   em_time_biomass <- emmeans(glmm_biomass, ~ treatment | sampling, type = "response")
   ###################################
   
-  ## Aggregating model results at treatment level ##
-  glmm_list <- list()
   
-  glmm_list[[1]] <- as.data.frame(pairs(em_treat_richness, adjust = "tukey")) |>
-    mutate(variable = paste0("richness"), AIC = AIC(glmm_richness), estimate_type = "substract") |> 
-    rename(estimate = estimate)
   
-  glmm_list[[2]] <- as.data.frame(pairs(em_treat_abundance, adjust = "tukey")) |> 
-    mutate(variable = paste0("abundance"), AIC = AIC(glmm_abundance), estimate_type = "substract")|> 
-    rename(estimate = estimate)
+  em_treat_list <- list(em_treat_richness, em_treat_abundance, em_treat_evenness, em_treat_sla, 
+                        em_treat_ldmc, em_treat_leafN, em_treat_biomass)
   
-  glmm_list[[3]]  <- as.data.frame(pairs(em_treat_evenness, adjust = "tukey")) |>
-    mutate(variable = paste0("evenness"), AIC = AIC(glmm_evenness), estimate_type = "substract")|> 
-    rename(estimate = estimate)
+  em_time_list <- list(em_time_richness, em_time_abundance, em_time_evenness, em_time_sla, 
+                        em_time_ldmc, em_time_leafN, em_time_biomass)
   
-  glmm_list[[4]] <- as.data.frame(pairs(em_treat_sla, adjust = "tukey")) |> 
+  em_list <- list(em_treat_list, em_time_list)
+  
+  glmm_results_treat_list <- list()
+  glmm_results_time_list <- list()
+  glmm_results <- list(glmm_results_treat_list, glmm_results_time_list)
+  
+for(i in seq_along(em_list)){
+  
+  glmm_results[[i]][[1]] <- as.data.frame(pairs(em_list[[i]][[1]], adjust = "tukey")) |>
+    mutate(variable = paste0("richness"), AIC = AIC(glmm_richness), estimate_type = "ratio") |> 
+    rename(estimate = ratio)|> 
+    select(-null)
+  
+  glmm_results[[i]][[2]]  <- as.data.frame(pairs(em_list[[i]][[2]], adjust = "tukey")) |> 
+    mutate(variable = paste0("abundance"), AIC = AIC(glmm_abundance), estimate_type = "ratio")|> 
+    rename(estimate = ratio)|> 
+    select(-null)
+  
+  glmm_results[[i]][[3]]  <- as.data.frame(pairs(em_list[[i]][[3]], adjust = "tukey")) |>
+    mutate(variable = paste0("evenness"), AIC = AIC(glmm_evenness), estimate_type = "substract")
+  
+  glmm_results[[i]][[4]]  <- as.data.frame(pairs(em_list[[i]][[4]], adjust = "tukey")) |> 
     mutate(variable = paste0("SLA"), AIC = AIC(glmm_sla), estimate_type = "ratio")|> 
     rename(estimate = ratio) |> 
     select(-null)
   
-  glmm_list[[5]]  <-  as.data.frame(pairs(em_treat_ldmc, adjust = "tukey")) |>
-    mutate(variable = paste0("LDMC"), AIC = AIC(glmm_LDMC), estimate_type = "substract")|> 
-    rename(estimate = estimate)
+  glmm_results[[i]][[5]]  <-  as.data.frame(pairs(em_list[[i]][[5]], adjust = "tukey")) |>
+    mutate(variable = paste0("LDMC"), AIC = AIC(glmm_LDMC), estimate_type = "ratio")|> 
+    rename(estimate = ratio)|> 
+    select(-null)
   
-  glmm_list[[6]]  <- as.data.frame(pairs(em_treat_leafN, adjust = "tukey")) |> 
-    mutate(variable = paste0("leafN"), AIC = AIC(glmm_leafN), estimate_type = "substract")|> 
-    rename(estimate = estimate)
+  glmm_results[[i]][[6]]  <- as.data.frame(pairs(em_list[[i]][[6]], adjust = "tukey")) |> 
+    mutate(variable = paste0("leafN"), AIC = AIC(glmm_leafN), estimate_type = "substract")
   
-  glmm_list[[7]]  <- as.data.frame(pairs(em_treat_biomass, adjust = "tukey")) |>
+  glmm_results[[i]][[7]]  <- as.data.frame(pairs(em_list[[i]][[7]], adjust = "tukey")) |>
     mutate(variable = paste0("biomass"), AIC = AIC(glmm_biomass), estimate_type = "ratio")|> 
     rename(estimate = ratio) |> 
     select(-null)
+}
   
-  glmm_results <- do.call(rbind, glmm_list) |> 
+  glmm_treatment <- do.call(rbind, glmm_results[[1]]) |> 
+    common_function() |> 
+    mutate(model = paste0("GLMM")) |>  
+    select(-contrast)
+  
+  # For those models where we used poly(sampling_num, X) we need to change the name of the variable
+  glmm_results[[2]][[3]] <- glmm_results[[2]][[3]] |> rename(sampling = sampling_num)
+  glmm_results[[2]][[4]] <- glmm_results[[2]][[4]] |> rename(sampling = sampling_num)
+  glmm_results[[2]][[5]] <- glmm_results[[2]][[5]] |> rename(sampling = sampling_num)
+  glmm_results[[2]][[6]] <- glmm_results[[2]][[6]] |> rename(sampling = sampling_num)
+  
+  glmm_dynamics <- do.call(rbind, glmm_results[[2]]) |> 
     common_function() |> 
     mutate(model = paste0("GLMM")) |>  
     select(-contrast)
   
   
-  ## Aggregating model results at sampling  level ##
-  glmm_time_list <- list()
   
-  glmm_time_list[[1]] <- as.data.frame(pairs(em_time_richness, adjust = "tukey")) |>
-    mutate(variable = paste0("richness"), AIC = AIC(glmm_richness), estimate_type = "substract") |> 
-    rename(estimate = estimate)
-  
-  glmm_time_list[[2]] <- as.data.frame(pairs(em_time_abundance, adjust = "tukey")) |> 
-    mutate(variable = paste0("abundance"), AIC = AIC(glmm_abundance), estimate_type = "substract")|> 
-    rename(estimate = estimate)
-  
-  glmm_time_list[[3]]  <- as.data.frame(pairs(em_time_evenness, adjust = "tukey")) |>
-    mutate(variable = paste0("evenness"), AIC = AIC(glmm_evenness), estimate_type = "substract")|> 
-    rename(estimate = estimate)
-  
-  glmm_time_list[[4]] <- as.data.frame(pairs(em_time_sla, adjust = "tukey")) |> 
-    mutate(variable = paste0("SLA"), AIC = AIC(glmm_sla), estimate_type = "ratio")|> 
-    rename(estimate = ratio) |> 
-    select(-null)
-  
-  glmm_time_list[[5]]  <-  as.data.frame(pairs(em_time_ldmc, adjust = "tukey")) |>
-    mutate(variable = paste0("LDMC"), AIC = AIC(glmm_LDMC), estimate_type = "substract")|> 
-    rename(estimate = estimate)
-  
-  glmm_time_list[[6]]  <- as.data.frame(pairs(em_time_leafN, adjust = "tukey")) |> 
-    mutate(variable = paste0("leafN"), AIC = AIC(glmm_leafN), estimate_type = "substract")|> 
-    rename(estimate = estimate)
-  
-  glmm_time_list[[7]]  <- as.data.frame(pairs(em_time_biomass, adjust = "tukey")) |>
-    mutate(variable = paste0("biomass"), AIC = AIC(glmm_biomass), estimate_type = "ratio")|> 
-    rename(estimate = ratio) |> 
-    select(-null)
-  
-  glmm_dynamics <- do.call(rbind, glmm_time_list) |> 
-    common_function() |> 
-    mutate(model = paste0("GLMM")) |>  
-    select(-contrast)
   
   
   
@@ -391,7 +380,7 @@ source("code/palettes_labels.R")
   ####### Joining GLMM, GAM and LRR ############
   
   
-  model_agg <- full_join(glmm_results, gam_results) |> 
+  model_agg <- full_join(glmm_treatment, gam_results) |> 
     full_join(lrr_table) |> 
     mutate(variable.bis = variable) |> 
     select(variable, eff_descriptor, model, AIC, p_value, effect_significance, estimate,
@@ -410,7 +399,7 @@ source("code/palettes_labels.R")
       effect_sign, variable.bis, variable_model)
   
   
-}
+#}
 
 
 ### VISUALIZATION ###
@@ -505,7 +494,7 @@ gg_pc_dyn <-
   geom_hline(yintercept = seq(3.5, 18.5, by = 3), linetype = "solid", linewidth = 0.5) +
   scale_color_manual(values = palette_significance) +
   scale_shape_manual(values = shape_significance) + 
-  labs(title = "Recovery(p/c)",
+  labs(title = "Recovery (p/c)",
        subtitle = "Model: variable ~ treatment * sampling + ar(sampling) + (1 | plot)",
        x = "Sampling", 
        y = "Variable and model")

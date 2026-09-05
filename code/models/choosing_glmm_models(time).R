@@ -37,21 +37,6 @@ arkaute_biomass   <- arkaute |> filter(!is.na(biomass_mice_lm))
 
 
 
-diagnose_glmm <- function(model, data = NULL, group_var = NULL) {
-  print(summary(model))
-  sim <- DHARMa::simulateResiduals(fittedModel = model)
-  plot(sim)
-  print(DHARMa::testDispersion(sim))
-  
-  if (!is.null(data) && !is.null(group_var)) {
-    grp  <- data[[group_var]]
-    resu <- sim$scaledResiduals
-    cat("Levene test on DHARMa residuals by", group_var, ":\n")
-    print(car::leveneTest(resu ~ grp))
-    plotResiduals(sim, form = grp)
-  }
-  invisible(sim)
-}
 
 
 diagnose_glmm <- function(model, data = NULL, group_var = NULL) {
@@ -105,13 +90,13 @@ m2_richness <- glmmTMB( richness ~ treatment * poly(sampling_num, 3) + ar1(sampl
                           data = arkaute_richness,family = genpois())
 
 
-m3_richness <- glmmTMB( richness ~ treatment * sampling + (1 | plot),
-               data = arkaute_richness,family = gaussian)
-
-m4_richness <- glmmTMB( richness ~ treatment + (1 | plot),
-               data = arkaute_richness,family = gaussian)
+m3_richness <- glmmTMB( richness ~ treatment * sampling + ar1(sampling + 0 | plot),
+                        dispformula = ~ treatment, 
+                        data = arkaute_richness,family = genpois())
 
 
+as.data.frame(pairs(emmeans(m3_richness, ~ treatment, type = "response"), adjust = "tukey"))
+pairs(emmeans(m3_richness, ~ sampling, type = "response"), adjust = "tukey")
 
 diagnose_glmm(m1_richness)
 diagnose_glmm(m2_richness)
@@ -276,5 +261,61 @@ AIC(m5_LDMC)
 
 ### Leaf N ###
 
+hist(arkaute_leafN$leafN)
+quantile(arkaute_leafN$leafN)
+
+m1_leafN <- glmmTMB(leafN ~ treatment * sampling + ar1(sampling + 0 | plot),
+                      data = arkaute_leafN, family = gaussian(link = "identity"))
+
+m2_leafN <- glmmTMB(leafN ~ treatment * poly(sampling_num, 3) + ar1(sampling_f + 0 | plot),
+                    data = arkaute_leafN, family = gaussian(link = "identity"))
+
+m3_leafN <- glmmTMB(leafN ~ treatment * poly(sampling_num, 3) + ar1(sampling_f + 0 | plot),
+                    dispformula = ~treatment, 
+                    data = arkaute_leafN, family = gaussian(link = "identity"))
+
+
+
+diagnose_glmm(m1_leafN)
+diagnose_glmm(m2_leafN)
+diagnose_glmm(m3_leafN)
+
+AIC(m1_leafN)
+AIC(m2_leafN)
+AIC(m3_leafN)
+
 
 ### Biomass ###
+
+
+m1_biomass <- glmmTMB(biomass_mice_lm ~ treatment * sampling + ar1(sampling + 0 | plot),
+                        data = arkaute_biomass,  family = Gamma(link = "log"))
+
+m2_biomass <- glmmTMB(biomass_mice_lm ~ treatment * poly(sampling_num, 3)  + ar1(sampling_f + 0 | plot),
+                      data = arkaute_biomass,  family = Gamma(link = "log"))
+
+m3_biomass <- glmmTMB(biomass_mice_lm ~ treatment * sampling + ar1(sampling + 0 | plot),
+                      dispformula = ~treatment,
+                      data = arkaute_biomass,  family = Gamma(link = "log"))
+
+m4_biomass <- glmmTMB(biomass_mice_lm ~ treatment * sampling + ar1(sampling + 0 | plot),
+                      dispformula = ~treatment,
+                      data = arkaute_biomass,  family = lognormal(link = "log"))
+
+
+
+diagnose_glmm(m1_biomass)
+diagnose_glmm(m2_biomass)
+diagnose_glmm(m3_biomass)
+diagnose_glmm(m4_biomass)
+
+diagnose_glmm(m3_biomass, data = arkaute_biomass, group_var = "treatment")
+
+
+AIC(m1_biomass)
+AIC(m2_biomass)
+AIC(m3_biomass)
+AIC(m4_biomass)
+
+
+
