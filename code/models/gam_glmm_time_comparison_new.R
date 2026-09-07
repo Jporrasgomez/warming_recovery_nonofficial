@@ -46,28 +46,8 @@ source("code/palettes_labels.R")
   arkaute_leafN     <- arkaute |> filter(!is.na(leafN))
   arkaute_biomass   <- arkaute |> filter(!is.na(biomass_mice_lm))
   
-  # Defining MODEL DIAGNOSIS FUNCTION
   
-  
-  
-  
-  diagnose_gam <- function(model, data = NULL, group_var = NULL) {
-    print(summary(model))
-    gam.check(model)
-    sim <- DHARMa::simulateResiduals(fittedModel = model)
-    plot(sim)
-    print(DHARMa::testDispersion(sim))
-    
-    if (!is.null(data) && !is.null(group_var)) {
-      grp  <- data[[group_var]]
-      resu <- sim$scaledResiduals
-      cat("Levene test on DHARMa residuals by", group_var, ":\n")
-      print(car::leveneTest(resu ~ grp))
-      plotResiduals(sim, form = grp)
-    }
-    invisible(sim)
-  }
-  
+
   ## Defininf JOINING AND CLEANING functions
   common_function <- function(data){
     data |> 
@@ -114,7 +94,6 @@ source("code/palettes_labels.R")
       ) |> 
       select(-upper_limit, -lower_limit, -null_effect)
   }
-  
   
   ## Opening LOG RESPONSE RATIO results datasets
   lrr_table <- read.csv("results/effect_size_aggregated.csv") |> 
@@ -181,15 +160,15 @@ source("code/palettes_labels.R")
   em_time_biomass <- emmeans(glmm_biomass, ~ treatment | sampling, type = "response")
   ###################################
   
+  #### Joining GLMM results ####
   
-  
-  em_treat_list <- list(em_treat_richness, em_treat_abundance, em_treat_evenness, em_treat_sla, 
+  glmm_em_treat_list <- list(em_treat_richness, em_treat_abundance, em_treat_evenness, em_treat_sla, 
                         em_treat_ldmc, em_treat_leafN, em_treat_biomass)
   
-  em_time_list <- list(em_time_richness, em_time_abundance, em_time_evenness, em_time_sla, 
+  glmm_em_time_list <- list(em_time_richness, em_time_abundance, em_time_evenness, em_time_sla, 
                         em_time_ldmc, em_time_leafN, em_time_biomass)
   
-  em_list <- list(em_treat_list, em_time_list)
+  glmm_em_list <- list(glmm_em_treat_list, glmm_em_time_list)
   
   glmm_results_treat_list <- list()
   glmm_results_time_list <- list()
@@ -197,33 +176,36 @@ source("code/palettes_labels.R")
   
 for(i in seq_along(em_list)){
   
-  glmm_results[[i]][[1]] <- as.data.frame(pairs(em_list[[i]][[1]], adjust = "tukey")) |>
+  # 1 is glmm at treatment level
+  # 2 is glmm at sampling level
+  
+  glmm_results[[i]][[1]] <- as.data.frame(pairs(glmm_em_list[[i]][[1]], adjust = "tukey")) |>
     mutate(variable = paste0("richness"), AIC = AIC(glmm_richness), estimate_type = "ratio") |> 
     rename(estimate = ratio)|> 
     select(-null)
   
-  glmm_results[[i]][[2]]  <- as.data.frame(pairs(em_list[[i]][[2]], adjust = "tukey")) |> 
+  glmm_results[[i]][[2]]  <- as.data.frame(pairs(glmm_em_list[[i]][[2]], adjust = "tukey")) |> 
     mutate(variable = paste0("abundance"), AIC = AIC(glmm_abundance), estimate_type = "ratio")|> 
     rename(estimate = ratio)|> 
     select(-null)
   
-  glmm_results[[i]][[3]]  <- as.data.frame(pairs(em_list[[i]][[3]], adjust = "tukey")) |>
+  glmm_results[[i]][[3]]  <- as.data.frame(pairs(glmm_em_list[[i]][[3]], adjust = "tukey")) |>
     mutate(variable = paste0("evenness"), AIC = AIC(glmm_evenness), estimate_type = "substract")
   
-  glmm_results[[i]][[4]]  <- as.data.frame(pairs(em_list[[i]][[4]], adjust = "tukey")) |> 
+  glmm_results[[i]][[4]]  <- as.data.frame(pairs(glmm_em_list[[i]][[4]], adjust = "tukey")) |> 
     mutate(variable = paste0("SLA"), AIC = AIC(glmm_sla), estimate_type = "ratio")|> 
     rename(estimate = ratio) |> 
     select(-null)
   
-  glmm_results[[i]][[5]]  <-  as.data.frame(pairs(em_list[[i]][[5]], adjust = "tukey")) |>
+  glmm_results[[i]][[5]]  <-  as.data.frame(pairs(glmm_em_list[[i]][[5]], adjust = "tukey")) |>
     mutate(variable = paste0("LDMC"), AIC = AIC(glmm_LDMC), estimate_type = "ratio")|> 
     rename(estimate = ratio)|> 
     select(-null)
   
-  glmm_results[[i]][[6]]  <- as.data.frame(pairs(em_list[[i]][[6]], adjust = "tukey")) |> 
+  glmm_results[[i]][[6]]  <- as.data.frame(pairs(glmm_em_list[[i]][[6]], adjust = "tukey")) |> 
     mutate(variable = paste0("leafN"), AIC = AIC(glmm_leafN), estimate_type = "substract")
   
-  glmm_results[[i]][[7]]  <- as.data.frame(pairs(em_list[[i]][[7]], adjust = "tukey")) |>
+  glmm_results[[i]][[7]]  <- as.data.frame(pairs(glmm_em_list[[i]][[7]], adjust = "tukey")) |>
     mutate(variable = paste0("biomass"), AIC = AIC(glmm_biomass), estimate_type = "ratio")|> 
     rename(estimate = ratio) |> 
     select(-null)
@@ -249,126 +231,106 @@ for(i in seq_along(em_list)){
   
   
   
-  
   ############# GAM MODELS ###########################################################
   samplings_eval <- sort(unique(arkaute_evenness$sampling_num))
   
   ## Richness ## 
-  gam_richness <- gam(
+  gam_richness <-  gam(
     richness ~ treatment + s(sampling_num, by = treatment, k = 10) + s(plot, bs = "re"),
     data = arkaute_richness, family = gaussian())
-  #diagnose_gam(gam_richness)
-  em_treat_richness <- emmeans(gam_richness, ~ treatment)
-  em_time_richness  <- emmeans(gam_richness, ~ treatment | sampling_num, at = list(sampling_num = samplings_eval))
+  gam_em_treat_richness <- emmeans(gam_richness, ~ treatment)
+  gam_em_time_richness  <- emmeans(gam_richness, ~ treatment | sampling_num, at = list(sampling_num = samplings_eval))
   
   ## Abundance ##
-  gam_abundance <- gam(abundance ~ treatment + s(sampling_num, by = treatment, k = 10) + s(plot, bs = "re"),
-                       data = arkaute_abundance, family = gaussian(link = "identity"))
-  #diagnose_gam(gam_abundance)
-  em_treat_abundance <- emmeans(gam_abundance, ~ treatment)
-  em_time_abundance  <- emmeans(gam_abundance, ~ treatment | sampling_num, at = list(sampling_num = samplings_eval))
+  gam_abundance <- gam(abundance ~ treatment + s(sampling_num, by = treatment, k = 18) + 
+      s(plot, bs = "re"), data = arkaute_abundance,  family = gaussian(link = "identity"))
+  gam_em_treat_abundance <- emmeans(gam_abundance, ~ treatment)
+  gam_em_time_abundance  <- emmeans(gam_abundance, ~ treatment | sampling_num, at = list(sampling_num = samplings_eval))
   
   ## Evenness ##
-  gam_evenness <- gam(Y_zipf ~ treatment + s(sampling_num, by = treatment, k = 10) + s(plot, bs = "re"),
-                      data = arkaute_evenness, family = gaussian())
-  #diagnose_gam(gam_evenness)
-  em_treat_evenness <- emmeans(gam_evenness, ~ treatment)
-  em_time_evenness  <- emmeans(gam_evenness, ~ treatment | sampling_num, at = list(sampling_num = samplings_eval))
+  gam_evenness <- gam( Y_zipf ~ treatment + s(sampling_num, by = treatment, k = 15) + s(plot, bs = "re"),
+                       data = arkaute_evenness, family = scat())
+  gam_em_treat_evenness <- emmeans(gam_evenness, ~ treatment)
+  gam_em_time_evenness  <- emmeans(gam_evenness, ~ treatment | sampling_num, at = list(sampling_num = samplings_eval))
   
   ## SLA ##
   gam_sla <- gam(SLA ~ treatment + s(sampling_num, by = treatment, k = 10) + s(plot, bs = "re"),
                  data = arkaute_sla, family = gaussian(link = "log"))
-  #diagnose_gam(gam_sla)
-  em_treat_sla <- emmeans(gam_sla, ~ treatment, type = "response")
-  em_time_sla  <- emmeans(gam_sla, ~ treatment | sampling_num, at = list(sampling_num = samplings_eval),
+  gam_em_treat_sla <- emmeans(gam_sla, ~ treatment, type = "response")
+  gam_em_time_sla  <- emmeans(gam_sla, ~ treatment | sampling_num, at = list(sampling_num = samplings_eval),
                           type = "response")
   
   ## LDMC ##
-  gam_ldmc <- gam(LDMC ~ treatment + s(sampling_num, by = treatment, k = 10) + s(plot, bs = "re"),
+  gam_ldmc <- gam(LDMC ~ treatment + s(sampling_num, by = treatment, k = 18) + s(plot, bs = "re"),
                   data = arkaute_ldmc, family = gaussian())
-  #diagnose_gam(gam_ldmc)
-  em_treat_ldmc <- emmeans(gam_ldmc, ~ treatment)
-  em_time_ldmc  <- emmeans(gam_ldmc, ~ treatment | sampling_num, at = list(sampling_num = samplings_eval))
+  gam_em_treat_ldmc <- emmeans(gam_ldmc, ~ treatment)
+  gam_em_time_ldmc  <- emmeans(gam_ldmc, ~ treatment | sampling_num, at = list(sampling_num = samplings_eval))
   
   ## Leaf Nitrogen ##
   gam_leafN <- gam(leafN ~ treatment + s(sampling_num, by = treatment, k = 10) + s(plot, bs = "re"),
                    data = arkaute_leafN, family = gaussian(link = "identity"))
-  #diagnose_gam(gam_leafN)
-  em_treat_leafN <- emmeans(gam_leafN, ~ treatment)
-  em_time_leafN  <- emmeans(gam_leafN, ~ treatment | sampling_num, at = list(sampling_num = samplings_eval))
+  gam_em_treat_leafN <- emmeans(gam_leafN, ~ treatment)
+  gam_em_time_leafN  <- emmeans(gam_leafN, ~ treatment | sampling_num, at = list(sampling_num = samplings_eval))
   
   ## Biomass ##
-  gam_biomass <- gam(biomass_mice_lm ~ treatment + s(sampling_num, by = treatment, k = 10) + s(plot, bs = "re"),
+  gam_biomass <- gam(biomass_mice_lm ~ treatment + s(sampling_num, by = treatment, k = 15) + s(plot, bs = "re"),
                      data = arkaute_biomass, family = tw(link = "log"))
-  #diagnose_gam(gam_biomass)
-  em_treat_biomass <-  emmeans(gam_biomass, ~ treatment, type = "response")
-  em_time_biomass  <- emmeans(gam_biomass, ~ treatment | sampling_num, at = list(sampling_num = samplings_eval),
+  gam_em_treat_biomass <-  emmeans(gam_biomass, ~ treatment, type = "response")
+  gam_em_time_biomass  <- emmeans(gam_biomass, ~ treatment | sampling_num, at = list(sampling_num = samplings_eval),
                               type = "response")
   
   ###############
   
+  gam_em_treat_list <- list(gam_em_treat_richness, gam_em_treat_abundance, gam_em_treat_evenness, gam_em_treat_sla, 
+                             gam_em_treat_ldmc, gam_em_treat_leafN, gam_em_treat_biomass)
   
-  gam_list <- list()
+  gam_em_time_list <- list(gam_em_time_richness, gam_em_time_abundance, gam_em_time_evenness, gam_em_time_sla, 
+                            gam_em_time_ldmc, gam_em_time_leafN, gam_em_time_biomass)
   
-  gam_list[[1]] <- as.data.frame(pairs(em_treat_richness, adjust = "tukey")) |>
+  gam_em_list <- list(gam_em_treat_list, gam_em_time_list)
+  
+  gam_results_treat_list <- list()
+  gam_results_time_list <- list()
+  gam_results <- list(gam_results_treat_list, gam_results_time_list)
+  
+  
+  
+  for(i in seq_along(gam_em_list)){
+  
+  
+  gam_results[[i]][[1]] <- as.data.frame(pairs(gam_em_list[[i]][[1]], adjust = "tukey")) |>
     mutate(variable = "richness", AIC = AIC(gam_richness), estimate_type = "substract")
   
-  gam_list[[2]] <- as.data.frame(pairs(em_treat_abundance, adjust = "tukey")) |>
+  gam_results[[i]][[2]] <- as.data.frame(pairs(gam_em_list[[i]][[2]], adjust = "tukey")) |>
     mutate(variable = "abundance", AIC = AIC(gam_abundance), estimate_type = "substract")
   
-  gam_list[[3]] <- as.data.frame(pairs(em_treat_evenness, adjust = "tukey")) |>
+  gam_results[[i]][[3]] <- as.data.frame(pairs(gam_em_list[[i]][[3]], adjust = "tukey")) |>
     mutate(variable = "evenness", AIC = AIC(gam_evenness), estimate_type = "substract")
   
-  gam_list[[4]] <- as.data.frame(pairs(em_treat_sla, adjust = "tukey")) |>
+  gam_results[[i]][[4]] <- as.data.frame(pairs(gam_em_list[[i]][[4]], adjust = "tukey")) |>
     mutate(variable = "SLA", AIC = AIC(gam_sla), estimate_type = "ratio") |>
     rename(estimate = ratio) |> 
     select(-null)
   
-  gam_list[[5]] <- as.data.frame(pairs(em_treat_ldmc, adjust = "tukey")) |>
+  gam_results[[i]][[5]] <- as.data.frame(pairs(gam_em_list[[i]][[5]], adjust = "tukey")) |>
     mutate(variable = "LDMC", AIC = AIC(gam_ldmc), estimate_type = "substract")
   
-  gam_list[[6]] <- as.data.frame(pairs(em_treat_leafN, adjust = "tukey")) |>
+  gam_results[[i]][[6]] <- as.data.frame(pairs(gam_em_list[[i]][[6]], adjust = "tukey")) |>
     mutate(variable = "leafN", AIC = AIC(gam_leafN), estimate_type = "substract")
   
-  gam_list[[7]] <- as.data.frame(pairs(em_treat_biomass, adjust = "tukey")) |>
+  gam_results[[i]][[7]] <- as.data.frame(pairs(gam_em_list[[i]][[7]], adjust = "tukey")) |>
     mutate(variable = "biomass", AIC = AIC(gam_biomass), estimate_type = "ratio") |>
     rename(estimate = ratio) |> 
     select(-null)
+  }
   
-  gam_results <- do.call(rbind, gam_list) |>
+  gam_treatment <- do.call(rbind,  gam_results[[1]]) |>
     common_function() |> 
     mutate(model = "GAM") |>
     select(-contrast)
   
-  
-  gam_time_result <- list()
-  
-  gam_time_result[[1]] <- as.data.frame(pairs(em_time_richness, adjust = "tukey")) |>
-    mutate(variable = "richness", AIC = AIC(gam_richness), estimate_type = "substract")
-  
-  gam_time_result[[2]] <- as.data.frame(pairs(em_time_abundance, adjust = "tukey")) |>
-    mutate(variable = "abundance", AIC = AIC(gam_abundance), estimate_type = "substract")
-  
-  gam_time_result[[3]] <- as.data.frame(pairs(em_time_evenness, adjust = "tukey")) |>
-    mutate(variable = "evenness", AIC = AIC(gam_evenness), estimate_type = "substract")
-  
-  gam_time_result[[4]] <- as.data.frame(pairs(em_time_sla, adjust = "tukey")) |>
-    mutate(variable = "SLA", AIC = AIC(gam_sla), estimate_type = "ratio")|>
-    rename(estimate = ratio) |> 
-    select(-null)
-  
-  gam_time_result[[5]] <- as.data.frame(pairs(em_time_ldmc, adjust = "tukey")) |>
-    mutate(variable = "LDMC", AIC = AIC(gam_ldmc), estimate_type = "substract")
-  
-  gam_time_result[[6]] <- as.data.frame(pairs(em_time_leafN, adjust = "tukey")) |>
-    mutate(variable = "leafN", AIC = AIC(gam_leafN), estimate_type = "substract")
-  
-  gam_time_result[[7]] <- as.data.frame(pairs(em_time_biomass, adjust = "tukey")) |>
-    mutate(variable = "biomass", AIC = AIC(gam_biomass), estimate_type = "ratio") |>
-    rename(estimate = ratio) |> 
-    select(-null)
-  
-  gam_dynamics <- do.call(rbind, gam_time_result) |>
+
+  gam_dynamics <- do.call(rbind, gam_results[[2]]) |>
     common_function() |> 
     mutate(model = "GAM") |>
     rename(sampling = sampling_num) |> 
@@ -376,11 +338,10 @@ for(i in seq_along(em_list)){
   
   
   
-  
   ####### Joining GLMM, GAM and LRR ############
   
   
-  model_agg <- full_join(glmm_treatment, gam_results) |> 
+  model_agg <- full_join(glmm_treatment, gam_treatment) |> 
     full_join(lrr_table) |> 
     mutate(variable.bis = variable) |> 
     select(variable, eff_descriptor, model, AIC, p_value, effect_significance, estimate,
