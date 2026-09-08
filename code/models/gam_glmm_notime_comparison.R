@@ -52,78 +52,43 @@ arkaute_biomass <- arkaute |> filter(!is.na(biomass_mice_lm))
 # Diagnosis functions
 
 
-# 4.2 GLMM diagnostics via DHARMa (including heteroscedasticity)
-diagnose_glmm <- function(model, data = NULL, group_var = NULL) {
-  print(summary(model))
-  sim <- DHARMa::simulateResiduals(fittedModel = model)
-  plot(sim)
-  print(DHARMa::testDispersion(sim))
-  
-  if (!is.null(data) && !is.null(group_var)) {
-    grp  <- data[[group_var]]
-    resu <- sim$scaledResiduals
-    cat("Levene test on DHARMa residuals by", group_var, ":\n")
-    print(car::leveneTest(resu ~ grp))
-    plotResiduals(sim, form = grp)
-  }
-  invisible(sim)
-}
-
-
-diagnose_gam <- function(model, data = NULL, group_var = NULL) {
-  print(summary(model))
-  gam.check(model)
-  sim <- DHARMa::simulateResiduals(fittedModel = model)
-  plot(sim)
-  print(DHARMa::testDispersion(sim))
-  
-  if (!is.null(data) && !is.null(group_var)) {
-    grp  <- data[[group_var]]
-    resu <- sim$scaledResiduals
-    cat("Levene test on DHARMa residuals by", group_var, ":\n")
-    print(car::leveneTest(resu ~ grp))
-    plotResiduals(sim, form = grp)
-  }
-  invisible(sim)
-}
-
 
 
   ############# GLMM ##############
   ## Richness ## 
   glmm_richness <- glmmTMB(richness ~ treatment + (1 | plot), data = arkaute, family = gaussian)
-  #diagnose_glmm(glmm_richness)
+  diagnose_glmm(glmm_richness)
   em_treat_richness <- emmeans(glmm_richness, ~ treatment, type = "response")
   
   ##### ABUNDANCE #####
   glmm_abundance <- glmmTMB(abundance ~ treatment + (1 | plot), data = arkaute, family = gaussian(link = "identity"))
-  #diagnose_glmm(glmm_abundance)
+  diagnose_glmm(glmm_abundance)
   em_treat_abundance <- emmeans(glmm_abundance, ~ treatment, type = "response")
   
   ##### EVENNESS #####
   glmm_evenness <- glmmTMB(Y_zipf ~ treatment + (1 | plot), data = arkaute_evenness, family = gaussian())
-  #diagnose_glmm(glmm_evenness)
+  diagnose_glmm(glmm_evenness)
   em_treat_evenness <- emmeans(glmm_evenness, ~ treatment, type = "response")
   
   ### SLA ###
   glmm_sla <- glmmTMB(SLA ~ treatment + (1 | plot), data = arkaute_sla, family = gaussian(link = "log"))
-  #diagnose_glmm(glmm_sla)
+  diagnose_glmm(glmm_sla)
   em_treat_sla <- emmeans(glmm_sla, ~ treatment, type = "response")
 
   ### LDMC ###
   glmm_LDMC <- glmmTMB(LDMC ~ treatment + (1 | plot), data = arkaute_ldmc, family = gaussian())
-  #diagnose_glmm(glmm_LDMC)
+  diagnose_glmm(glmm_LDMC)
   em_treat_ldmc<- emmeans(glmm_LDMC, ~ treatment, type = "response")
 
   ### Leaf nitrogen ###
   glmm_leafN <- glmmTMB(leafN ~ treatment + (1 | plot), data = arkaute_leafN, family = gaussian(link = "identity"))
-  #diagnose_glmm(glmm_leafN)
+  diagnose_glmm(glmm_leafN)
   em_treat_leafN <- emmeans(glmm_leafN, ~ treatment, type = "response")
 
   ### BIOMASS ###
   #glmm_biomass <- glmmTMB(biomass_mice_lm ~ treatment + (1 | plot), data = arkaute_biomass, family = Gamma(link = "log"))
   glmm_biomass <- glmmTMB(biomass_mice_lm ~ treatment + (1 | plot), data = arkaute_biomass, family = Gamma(link = "log"))
-  #diagnose_glmm(glmm_biomass)
+  diagnose_glmm(glmm_biomass)
   em_treat_biomass <- emmeans(glmm_biomass, ~ treatment, type = "response")
 
   
@@ -132,12 +97,12 @@ diagnose_gam <- function(model, data = NULL, group_var = NULL) {
   ############# GAM MODELS ##############
   ## Richness ## 
   gam_richness <- gam( richness ~ treatment + s(plot, bs = "re"), data = arkaute_richness, family = gaussian())
-  #diagnose_gam(gam_richness)
+  diagnose_gam(gam_richness)
   em_treat_richness_gam <- emmeans(gam_richness, ~ treatment)
   
   ## Abundance ##
   gam_abundance <- gam(abundance ~ treatment + s(plot, bs = "re"), data = arkaute_abundance, family = gaussian(link = "identity"))
-  #diagnose_gam(gam_abundance)
+  diagnose_gam(gam_abundance)
   em_treat_abundance_gam <- emmeans(gam_abundance, ~ treatment)
  
   ## Evenness ##

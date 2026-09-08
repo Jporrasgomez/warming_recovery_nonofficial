@@ -31,24 +31,6 @@ arkaute_no0 <- arkaute %>%
 
 # 1. Geary test at Treatment level 
 
-
-plot_level <- data %>% 
-  #filter(year == "2024") |> 
-  filter(!is.na(.data[[variable]])) %>% 
-  group_by(plot, treatment) %>% 
-  summarise(plot_mean = mean(.data[[variable]]), .groups = "drop")
-
-# Step 2: Compute true treatment-level mean, sd, and plot count (N = 4)
-effect <- plot_level %>% 
-  group_by(treatment) %>% 
-  summarise(
-    mean = mean(plot_mean),
-    sd = sd(plot_mean),
-    n = n(),
-    .groups = "drop"
-  )
-
-
 geary_test_treatment0 <- arkaute_no0 %>%
   pivot_longer(
     cols = c(-date, -year, - date_label, -date_label_noyear, -sampling, -plot, -treatment,
@@ -130,9 +112,9 @@ source("code/functions/gg_dynamics_function2.R")      # Function for visualizati
 
 
 k = 1    # k = 1: main variables
-# k = 2: biomass variables for sensitivity analysis
+         # k = 2: biomass variables for sensitivity analysis
 
-width_dynamics = 3
+width_dynamics = 3 # size for plots (1:3) 1 for agg analysis, 3 for dynamics
 
 {
   
@@ -333,10 +315,10 @@ print(gg_wp)
 
 
 
-#ggsave("results/Figure_2.png", plot = gg_control, dpi = 600)
-#ggsave("results/Figure_2.svg", plot = gg_control, dpi = 600)
-#ggsave("results/Figure_3.png", plot = gg_wp, dpi = 600)
-#ggsave("results/Figure_3.svg", plot = gg_wp, dpi = 600)
+ggsave("results/Figure_2.png", plot = gg_control, dpi = 600)
+ggsave("results/Figure_2.svg", plot = gg_control, dpi = 600)
+ggsave("results/Figure_3.png", plot = gg_wp, dpi = 600)
+ggsave("results/Figure_3.svg", plot = gg_wp, dpi = 600)
 #
 
 
