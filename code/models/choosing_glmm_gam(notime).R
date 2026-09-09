@@ -104,18 +104,23 @@ arkaute <- read.csv("data/processed_data/arkaute.csv") %>%
   m1_glmm_abundance <- glmmTMB(abundance ~ treatment + (1 | plot),
                                data = arkaute, family = gaussian(link = "identity"))
   
-  # 1. Modelo Binomial Negativa (para conteos)
-  m2_glmm_abundance <- glmmTMB(abundance ~ treatment + (1 | plot), 
+  m2_glmm_abundance <- glmmTMB(abundance ~ treatment + (1 | plot),
+                               dispformula =  ~ treatment, 
+                               data = arkaute, family = gaussian(link = "identity"))
+  
+  m3_glmm_abundance <- glmmTMB(abundance ~ treatment + (1 | plot), 
                        data = arkaute, 
                        family = tweedie())
   
   # 2. Modelo Binomial Negativa con varianza por tratamiento
-  m3_glmm_abundance <- glmmTMB(abundance ~ treatment + (1 | plot), 
+  m4_glmm_abundance <- glmmTMB(abundance ~ treatment + (1 | plot), 
                      data = arkaute, 
                      family = Gamma(link = "log"))
+  
   diagnose_glmm(m1_glmm_abundance)
   diagnose_glmm(m2_glmm_abundance)
   diagnose_glmm(m3_glmm_abundance)
+  diagnose_glmm(m4_glmm_abundance)
   
   AIC(m1_glmm_abundance)
   AIC(m2_glmm_abundance)
@@ -123,30 +128,67 @@ arkaute <- read.csv("data/processed_data/arkaute.csv") %>%
 
   
   ##### EVENNESS #####
+  
   m1_glmm_evenness <- glmmTMB(Y_zipf ~ treatment + (1 | plot), data = arkaute_evenness, family = gaussian())
+  m2_glmm_evenness <- glmmTMB(Y_zipf ~ treatment + (1 | plot),
+                              dispformula = ~ treatment, 
+                              data = arkaute_evenness, family = gaussian())
   diagnose_glmm(m1_glmm_evenness)
+  diagnose_glmm(m2_glmm_evenness)
 
   
   ### SLA ###
   m1_glmm_sla <- glmmTMB(SLA ~ treatment + (1 | plot), data = arkaute_sla, family = gaussian(link = "log"))
-  diagnose_glmm(m1_glmm_sla)
+  
+  m2_glmm_sla <- glmmTMB(SLA ~ treatment + (1 | plot), data = arkaute_sla, family = Gamma(link = "log"))
+  
+  m3_glmm_sla <- glmmTMB(SLA ~ treatment + (1 | plot), data = arkaute_sla, family = lognormal())
+  
+  m4_glmm_sla <- glmmTMB(SLA ~ treatment + (1 | plot), 
+                         dispformula = ~ treatment, 
+                         data = arkaute_sla, family = gaussian(link = "log"))
+  
+
+  
+  AIC(m1_glmm_sla, m2_glmm_sla, m3_glmm_sla, m4_glmm_sla, m5_glmm_sla)
+  diagnose_glmm(null_glmm_sla)
+  diagnose_glmm(m4_glmm_sla)
   
   
   ### LDMC ###
   m1_glmm_LDMC <- glmmTMB(LDMC ~ treatment + (1 | plot), data = arkaute_ldmc, family = gaussian())
+
+
+  m2_glmm_LDMC <- glmmTMB(LDMC ~ treatment + (1 | plot), 
+                          dispformula = ~ treatment, 
+                          data = arkaute_ldmc, 
+                          family = gaussian())
+
+  AIC(m1_glmm_LDMC, m2_glmm_LDMC)
+  
   diagnose_glmm(m1_glmm_LDMC)
+  diagnose_glmm(m2_glmm_LDMC)
   
   
   ### Leaf nitrogen ###
   m1_glmm_leafN <- glmmTMB(leafN ~ treatment + (1 | plot), data = arkaute_leafN, family = gaussian(link = "identity"))
+  m2_glmm_leafN <- glmmTMB(leafN ~ treatment + (1 | plot),
+                           dispformula = ~ treatment, 
+                           data = arkaute_leafN, family = gaussian(link = "identity"))
+  AIC(m1_glmm_leafN, m2_glmm_leafN)
   diagnose_glmm(m1_glmm_leafN)
+  diagnose_glmm(m2_glmm_leafN)
 
   
   ### BIOMASS ###
   #m1_glmm_biomass <- glmmTMB(biomass_mice_lm ~ treatment + (1 | plot), data = arkaute_biomass, family = Gamma(link = "log"))
   m1_glmm_biomass <- glmmTMB(biomass_mice_lm ~ treatment + (1 | plot), data = arkaute_biomass, family = Gamma(link = "log"))
+  m2_glmm_biomass <- glmmTMB(biomass_mice_lm ~ treatment + (1 | plot),
+                             dispformula = ~ treatment, 
+                             data = arkaute_biomass, family = Gamma(link = "log"))
   diagnose_glmm(m1_glmm_biomass)
-  
+  diagnose_glmm(m2_glmm_biomass)
+  AIC(m1_glmm_biomass, m2_glmm_biomass)
   
   
   
@@ -181,6 +223,58 @@ arkaute <- read.csv("data/processed_data/arkaute.csv") %>%
     }
     invisible(sim)
   }
+  
+  
+  
+  
+  ############# GAM MODELS ##############
+  ## Richness ## 
+  m1_gam_richness <- gam( richness ~ treatment + s(plot, bs = "re"), data = arkaute_richness, family = gaussian())
+  diagnose_gam(m1_gam_richness)
+ 
+  
+  ## Abundance ##
+  m1_gam_abundance <- gam(abundance ~ treatment + s(plot, bs = "re"), data = arkaute_abundance,
+                          family = gaussian(link = "identity"))
+  
+  m2_gam_abundance <- gam(abundance ~ treatment + s(plot, bs = "re"), data = arkaute_abundance,
+                          family = Gamma(link = "log"))
+  
+  AIC(m1_gam_abundance, m2_gam_abundance)
+  diagnose_gam(m1_gam_abundance)
+  diagnose_gam(m2_gam_abundance)
+  
+  
+  ## Evenness ##
+  m1_gam_evenness <- gam(Y_zipf ~ treatment + s(plot, bs = "re"), data = arkaute_evenness, family = gaussian())
+  
+  m1_gam_reml <- gam(Y_zipf ~ treatment + s(plot, bs = "re"), 
+                     data = arkaute_evenness, 
+                     family = gaussian(), 
+                     method = "REML")
+  AIC(m1_gam_evenness, m1_gam_reml)
+  diagnose_gam(m1_gam_evenness)
+  diagnose_gam(m1_gam_reml)
+  
+  
+  ## SLA ##
+  m1_gam_sla <- gam(SLA ~ treatment + s(plot, bs = "re"), data = arkaute_sla, family = gaussian(link = "log"))
+  diagnose_gam(m1_gam_sla)
+  
+  
+  ## LDMC ##
+  m1_gam_ldmc <- gam(LDMC ~ treatment + s(plot, bs = "re"), data = arkaute_ldmc, family = gaussian())
+  diagnose_gam(m1_gam_ldmc)
+  
+  
+  ## Leaf Nitrogen ##
+  m1_gam_leafN <- gam(leafN ~ treatment + s(plot, bs = "re"), data = arkaute_leafN, family = gaussian(link = "identity"))
+  diagnose_gam(m1_gam_leafN)
+  
+  
+  ## Biomass ##
+  m1_gam_biomass <- gam(biomass_mice_lm ~ treatment + s(plot, bs = "re"), data = arkaute_biomass, family = Gamma(link = "log"))
+  diagnose_gam(m1_gam_biomass)
   
   
   

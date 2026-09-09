@@ -10,7 +10,7 @@ pacman::p_load(
 source("code/palettes_labels.R")
 
 
-#{
+{
   
   theme_set(
     theme_bw() +
@@ -174,10 +174,9 @@ source("code/palettes_labels.R")
   glmm_results_time_list <- list()
   glmm_results <- list(glmm_results_treat_list, glmm_results_time_list)
   
-for(i in seq_along(em_list)){
+for(i in seq_along(glmm_em_list)){
   
-  # 1 is glmm at treatment level
-  # 2 is glmm at sampling level
+
   
   glmm_results[[i]][[1]] <- as.data.frame(pairs(glmm_em_list[[i]][[1]], adjust = "tukey")) |>
     mutate(variable = paste0("richness"), AIC = AIC(glmm_richness), estimate_type = "ratio") |> 
@@ -360,149 +359,9 @@ for(i in seq_along(em_list)){
       effect_sign, variable.bis, variable_model)
   
   
-#}
+  model_agg |> write.csv("results/model_comparison_time_treatment.csv")
+  models_dynamics |> write.csv("results/model_comparison_time_dynamics.csv")
+  
+}
 
 
-### VISUALIZATION ###
-
-
-gg_wpp <- 
-  model_agg |> 
-  filter(eff_descriptor == "wp_vs_p") |> 
-  ggplot(aes(x = model, y = variable, color = effect_significance, shape = effect_sign,
-             label = round(p_value, 2))) +
-  geom_point(size = 10) +
-  geom_label_repel(show.legend = FALSE) +
-  scale_color_manual(values = palette_significance) +
-  scale_shape_manual(values = shape_significance) +
-  labs(title = "Warming effect on recovery (wp vs p)",
-       subtitle = "Model: variable ~ treatment * sampling + ar(sampling) + (1 | plot)",
-       x = "Statistical analysis", y = NULL,
-       shape = "Sign of effect", color = "Effect stat. significance")
-print(gg_wpp)
-
-gg_pc <- 
-  model_agg |> 
-  filter(eff_descriptor == "p_vs_c") |> 
-  ggplot(aes(x = model, y = variable, color = effect_significance, shape = effect_sign,
-             label = round(p_value, 2))) +
-  geom_point(size = 10) +
-  geom_label_repel(show.legend = FALSE) +
-  scale_color_manual(values = palette_significance) +
-  scale_shape_manual(values = shape_significance) +
-  labs(title = "Perturbation effect (p vs c)",
-       subtitle = "Model: variable ~ treatment * sampling + ar(sampling) + (1 | plot)",
-       x = "Statistical analysis", y = NULL,
-       shape = "Sign of effect", color = "Effect stat. significance")
-print(gg_pc)
-
-
-gg_wc <- 
-  model_agg |> 
-  filter(eff_descriptor == "w_vs_c") |> 
-  ggplot(aes(x = model, y = variable, color = effect_significance, shape = effect_sign,
-             label = round(p_value, 2))) +
-  geom_point(size = 10) +
-  geom_label_repel(show.legend = FALSE) +
-  scale_color_manual(values = palette_significance) +
-  scale_shape_manual(values = shape_significance) +
-  labs(title = "Warming effect on assembly (w vs c)",,
-       subtitle = "Model: variable ~ treatment * sampling + ar(sampling) + (1 | plot)",
-       x = "Statistical analysis", y = NULL,
-       shape = "Sign of effect", color = "Effect stat. significance")
-print(gg_wc)
-
-gg_wpc <-
-  model_agg |> 
-  filter(eff_descriptor == "wp_vs_c") |> 
-  ggplot(aes(x = model, y = variable, color = effect_significance, shape = effect_sign,
-             label = round(p_value, 2))) +
-  geom_point(size = 10) +
-  geom_label_repel(show.legend = FALSE) +
-  scale_color_manual(values = palette_significance) +
-  scale_shape_manual(values = shape_significance) +
-  labs(title = "Combined effect (wp vs c)",
-       subtitle = "Model: variable ~ treatment * sampling + ar(sampling) + (1 | plot)",
-       x = "Statistical analysis", y = NULL,
-       shape = "Sign of effect", color = "Effect stat. significance")
-print(gg_wpc)
-
-
-gg_wpp_dyn <- 
-  models_dynamics |> 
-  filter(eff_descriptor == "wp_vs_p") |> 
-  ggplot(aes(x = sampling, y = variable_model, color = effect_significance, shape = effect_sign)) +
-  geom_point(size = 8) +
-  geom_hline(yintercept = seq(3.5, 18.5, by = 3), linetype = "solid", linewidth = 0.5) +
-  scale_color_manual(values = palette_significance) +
-  scale_shape_manual(values = shape_significance) +
-  labs(title = "Warming effect on recovery (wp/p)",
-       subtitle = "Model: variable ~ treatment * sampling + ar(sampling) + (1 | plot)",
-       x = "Sampling", 
-       y = "Variable and model",
-       color = "Effect significance",
-       shape = "Sign of the effect")
-print(gg_wpp_dyn)
-
-
-
-
-gg_pc_dyn <- 
-  models_dynamics |> 
-  filter(eff_descriptor == "p_vs_c") |> 
-  ggplot(aes(x = sampling, y = variable_model, color = effect_significance, shape = effect_sign)) +
-  geom_point(size = 8) +
-  geom_hline(yintercept = seq(3.5, 18.5, by = 3), linetype = "solid", linewidth = 0.5) +
-  scale_color_manual(values = palette_significance) +
-  scale_shape_manual(values = shape_significance) + 
-  labs(title = "Recovery (p/c)",
-       subtitle = "Model: variable ~ treatment * sampling + ar(sampling) + (1 | plot)",
-       x = "Sampling", 
-       y = "Variable and model")
-print(gg_pc_dyn)
-
-
-
-gg_wc_dyn <- 
-  models_dynamics |> 
-  filter(eff_descriptor == "w_vs_c") |> 
-  ggplot(aes(x = sampling, y = variable_model, color = effect_significance, shape = effect_sign)) +
-  geom_point(size = 8) +
-  geom_hline(yintercept = seq(3.5, 18.5, by = 3), linetype = "solid", linewidth = 0.5) +
-  scale_color_manual(values = palette_significance) +
-  scale_shape_manual(values = shape_significance) +
-  labs(title = "Warming effect(w/c)",
-       subtitle = "Model: variable ~ treatment * sampling + ar(sampling) + (1 | plot)",
-       x = "Sampling", 
-       y = "Variable and model")
-print(gg_wc_dyn)
-
-
-
-
-gg_wpc_dyn <- 
-  models_dynamics |> 
-  filter(eff_descriptor == "wp_vs_c") |> 
-  ggplot(aes(x = sampling, y = variable_model, color = effect_significance, shape = effect_sign)) +
-  geom_point(size = 8) +
-  geom_hline(yintercept = seq(3.5, 18.5, by = 3), linetype = "solid", linewidth = 0.5) +
-  scale_color_manual(values = palette_significance) +
-  scale_shape_manual(values = shape_significance) +
-  labs(title = "Combined effect(wp/c)", 
-       subtitle = "Model: variable ~ treatment * sampling + ar(sampling) + (1 | plot)",
-       x = "Sampling", 
-       y = "Variable and model")
-print(gg_wpc_dyn)
-
-
-
-
-ggsave("results/model_comparison_time_treatment_wp_vs_p.png", plot = gg_wpp, dpi = 600)
-ggsave("results/model_comparison_time_treatment_p_vs_c.png", plot = gg_pc, dpi = 600)
-ggsave("results/model_comparison_time_treatment_w_vs_c.png", plot = gg_wc, dpi = 600)
-ggsave("results/model_comparison_time_treatment_wp_vs_c.png", plot = gg_wpc, dpi = 600)
-
-ggsave("results/model_comparison_time_sampling_wp_vs_p.png", plot = gg_wpp_dyn, dpi = 600)
-ggsave("results/model_comparison_time_sampling_w_vs_c.png", plot = gg_pc_dyn, dpi = 600)
-ggsave("results/model_comparison_time_sampling_p_vs_c.png", plot = gg_wc_dyn, dpi = 600)
-ggsave("results/model_comparison_time_sampling_wp_vs_c.png", plot = gg_wpc_dyn, dpi = 600)
