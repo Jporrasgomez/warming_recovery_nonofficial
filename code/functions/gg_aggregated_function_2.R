@@ -28,12 +28,27 @@ ggagg2 <- function(data, palette, labels, colorline, limitvar, labelvar, breaks_
     
     geom_point(size = 6) +
     
-    geom_text(aes(
-      y = ifelse(eff_value < 0, lower_limit - scale, upper_limit + scale),
-      label = ifelse(null_effect == "NO", "*", NA_character_)
-    ),
-    show.legend = FALSE,
-    size = 10) +
+    #geom_text(aes(
+    #  y = ifelse(eff_value < 0, lower_limit - scale, upper_limit + scale),
+    #  label = ifelse(null_effect == "NO", "*", NA_character_)
+    #),
+    #show.legend = FALSE,
+    #size = 10) +
+    
+    geom_text(
+      aes(
+        y = ifelse(eff_value < 0, lower_limit - scale, upper_limit + scale),
+        label = case_when(
+          glmm_effect_significance == "significant"     ~ "*",
+          glmm_effect_significance == "marginal"        ~ "#",
+          glmm_effect_significance == "non-significant" ~ NA_character_
+        )
+      ),
+      
+      #vjust = 0.7,          # Ajuste vertical para centrar el '*' dentro de la figura
+      show.legend = FALSE,
+      size = 10
+    ) +
     
     scale_color_manual(values = palette, labels = labels) +
     

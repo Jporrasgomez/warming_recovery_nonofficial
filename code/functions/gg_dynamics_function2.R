@@ -37,18 +37,38 @@ v_year  <- match("Nov 13", levs) + 0.5
   
   geom_line(position = pos_dod_c_dyn, linewidth = 0.5) + 
     
-    geom_text(aes(
-      x = date_label_noyear,
-      y = ifelse(eff_value < 0,
-                 lower_limit - asterisk * scale,
-                 upper_limit + asterisk * scale),
-      label = ifelse(null_effect == "NO", "*", NA_character_),
-      color = eff_descriptor
-    ),
-    position      = position,
-    inherit.aes   = FALSE,
-    size          = 6, 
-    show.legend   = FALSE
+   # geom_text(aes(
+   #   x = date_label_noyear,
+   #   y = ifelse(eff_value < 0,
+   #              lower_limit - asterisk * scale,
+   #              upper_limit + asterisk * scale),
+   #   label = ifelse(null_effect == "NO", "*", NA_character_),
+   #   color = eff_descriptor
+   # ),
+   # position      = position,
+   # inherit.aes   = FALSE,
+   # size          = 6, 
+   # show.legend   = FALSE
+   # ) +
+    
+    
+    geom_text(
+      aes(
+        x = date_label_noyear,
+        y = ifelse(eff_value < 0,
+                   lower_limit - asterisk * scale,
+                   upper_limit + asterisk * scale),
+        label = case_when(
+          glmm_effect_significance == "significant"     ~ "*",
+          glmm_effect_significance == "marginal"        ~ "·",
+          glmm_effect_significance == "non-significant" ~ NA_character_
+        ), 
+        color = eff_descriptor
+      ),
+      position      = position,
+      inherit.aes   = FALSE,
+      size          = 7, 
+      show.legend   = FALSE
     ) +
     
     scale_y_continuous(

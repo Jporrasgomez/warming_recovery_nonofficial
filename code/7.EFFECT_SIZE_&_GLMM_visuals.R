@@ -14,8 +14,6 @@ pacman::p_load(dplyr,reshape2,tidyverse, lubridate, ggplot2, ggpubr, gridExtra,
 
 source("code/palettes_labels.R")
 
-agg_glmm  <-  read.csv("results/GLMM_agg.csv") |> select(-X)
-dyn_glmm  <-  read.csv("results/GLMM_dyn.csv") |> select(-X)
 
 
 arkaute <- read.csv("data/processed_data/arkaute.csv") %>% 
@@ -141,6 +139,47 @@ width_dynamics = 3 # size for plots (1:3) 1 for agg analysis, 3 for dynamics
   agg <- do.call(rbind, list_agg) %>% 
     select(eff_descriptor, variable, scale, eff_value, lower_limit, upper_limit, null_effect)
   
+ 
+  
+  agg %>%   write.csv("results/effect_size_aggregated.csv")
+
+  agg_glmm  <-  read.csv("results/GLMM_agg.csv") |> select(-X) |> 
+    filter(!variable %in% c("biomass_mice", "biomass_raw")) |> 
+    mutate(
+      variable = fct_recode(variable,
+                            "Y_zipf" = "evenness",
+                            "biomass_mice_lm"  = "biomass"))
+    
+  
+  agg <- merge(agg, agg_glmm) |> 
+    select(eff_descriptor, variable, eff_value, lower_limit, upper_limit,
+           null_effect, scale,  estimate, SE, p_value, AIC, estimate_type, effect_sign, 
+           effect_significance) |> 
+    rename(glmm_estimate = estimate, 
+           glmm_SE = SE, 
+           glmm_p_value = p_value, 
+           glmm_AIC = AIC, 
+           glmm_estimatetype = estimate_type, 
+           glmm_effect_sign = effect_sign,
+           glmm_effect_significance = effect_significance) |> 
+    mutate(
+      final_effect = case_when(
+        eff_value > 0 & glmm_effect_sign == "positive"      ~ paste0("positive"), 
+        eff_value > 0 & glmm_effect_sign == "negative"      ~ paste0("conflict"),
+        eff_value < 0 & glmm_effect_sign == "negative"      ~ paste0("negative"),
+        eff_value < 0 & glmm_effect_sign == "positive"      ~ paste0("conflict"),
+      ),
+      final_significance = case_when(
+        null_effect == "NO"  & glmm_effect_significance == "significant"      ~ paste0("both"),
+        null_effect == "NO"  & glmm_effect_significance == "marginal"         ~ paste0("both-marginal"),
+        null_effect == "NO"  & glmm_effect_significance == "non-significant"  ~ paste0("lost"),
+        null_effect == "YES" & glmm_effect_significance == "significant"      ~ paste0("conflict"), 
+        null_effect == "YES" & glmm_effect_significance == "marginal"         ~ paste0("conflict-marginal"),
+        null_effect == "YES" & glmm_effect_significance == "non-significant"  ~ paste0("none")
+      )
+    )
+    
+  
   dyn <- do.call(rbind, list_dyn) %>% 
     mutate(
       date_label_noyear = factor(
@@ -149,25 +188,58 @@ width_dynamics = 3 # size for plots (1:3) 1 for agg analysis, 3 for dynamics
         ordered = TRUE
       )
     )
-  
-  agg %>%   write.csv("results/effect_size_aggregated.csv")
+   
   dyn %>%   write.csv("results/effect_size_dynamics.csv")
   
-  agg_glmm <-  agg_glmm |> 
+  # We need samplings 0 and 1, for which GLMM model were not fitted. 
+  dyn_01 <- dyn |> 
+    select(sampling, year, date, date_label_noyear,  eff_descriptor, variable, eff_value,
+           lower_limit, upper_limit, null_effect, scale) |> 
+    filter(sampling %in% c("0", "1"),
+           !variable %in% c("biomass_mice", "biomass_raw")) |> 
+    mutate(
+      glmm_estimate = NA, glmm_SE = NA, glmm_p_value = NA, glmm_AIC = NA, glmm_estimate_type = NA,
+      glmm_effect_sign = NA, glmm_effect_significance = NA
+    )
+    
+  
+  dyn_glmm  <-  read.csv("results/GLMM_dyn.csv") |> select(-X) |> 
     filter(!variable %in% c("biomass_mice", "biomass_raw")) |> 
     mutate(
       variable = fct_recode(variable,
                             "Y_zipf" = "evenness",
-                            "biomass_mice_lm"  = "biomass"))
-    
-  agg <- agg |> filter(eff_descriptor != "wp_vs_w")
+                            "biomass_mice_lm"  = "biomass"),
+      sampling = as.factor(sampling))
   
-  agg_prueba <- merge(agg, agg_glmm)
-  
-  str(agg)
-  str(agg_glmm)
-  
-  agg <- agg 
+  dyn <- left_join(dyn, dyn_glmm) |> 
+    select(sampling, year, date, date_label_noyear,  eff_descriptor, variable, eff_value,
+           lower_limit, upper_limit, null_effect, scale, estimate, SE, p_value, AIC, estimate_type,
+           effect_sign, effect_significance) |> 
+    rename(glmm_estimate = estimate, 
+           glmm_SE = SE, 
+           glmm_p_value = p_value, 
+           glmm_AIC = AIC, 
+           glmm_estimatetype = estimate_type, 
+           glmm_effect_sign = effect_sign,
+           glmm_effect_significance = effect_significance) |> 
+    mutate(
+      final_effect = case_when(
+        eff_value > 0 & glmm_effect_sign == "positive"      ~ paste0("positive"), 
+        eff_value > 0 & glmm_effect_sign == "negative"      ~ paste0("conflict"),
+        eff_value < 0 & glmm_effect_sign == "negative"      ~ paste0("negative"),
+        eff_value < 0 & glmm_effect_sign == "positive"      ~ paste0("conflict"),
+      ),
+      final_significance = case_when(
+        null_effect == "NO"  & glmm_effect_significance == "significant"      ~ paste0("both"),
+        null_effect == "NO"  & glmm_effect_significance == "marginal"         ~ paste0("both-marginal"),
+        null_effect == "NO"  & glmm_effect_significance == "non-significant"  ~ paste0("lost"),
+        null_effect == "YES" & glmm_effect_significance == "significant"      ~ paste0("conflict"), 
+        null_effect == "YES" & glmm_effect_significance == "marginal"         ~ paste0("conflict-marginal"),
+        null_effect == "YES" & glmm_effect_significance == "non-significant"  ~ paste0("none")
+      )
+    ) |> 
+    bind_rows(dyn_01) # Integration of samplings 0 and 1
+
   
   ## 2. GENERATING PLOTS ####
   
@@ -203,9 +275,6 @@ width_dynamics = 3 # size for plots (1:3) 1 for agg analysis, 3 for dynamics
     "biomass_mice" = "MICE",
     "biomass_mice_lm" = "MICE + LM"
   )      
-  
-  
-  
   
   
   
