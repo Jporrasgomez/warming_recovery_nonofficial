@@ -111,8 +111,8 @@ source("code/functions/gg_aggregated_function_2.R")   # Function for visualizati
 source("code/functions/gg_dynamics_function2.R")      # Function for visualization of dynamics analysis
 
 
-k = 1    # k = 1: main variables
-         # k = 2: biomass variables for sensitivity analysis
+k = 1   # k = 1: main variables
+        # k = 2: biomass variables for sensitivity analysis
 
 width_dynamics = 3 # size for plots (1:3) 1 for agg analysis, 3 for dynamics
 

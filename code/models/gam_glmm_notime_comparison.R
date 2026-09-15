@@ -124,7 +124,10 @@ arkaute_biomass <- arkaute |> filter(!is.na(biomass_mice_lm))
   em_treat_leafN_gam <- emmeans(gam_leafN, ~ treatment)
  
   ## Biomass ##
-  gam_biomass <- gam(biomass_mice_lm ~ treatment + s(plot, bs = "re"), data = arkaute_biomass, family = Gamma(link = "log"))
+  gam_biomass <- gam(biomass_mice_lm ~ treatment + s(plot, bs = "re"), 
+      data = arkaute_biomass, 
+      family = tw(), 
+      method = "REML")
   em_treat_biomass_gam <-  emmeans(gam_biomass, ~ treatment, type = "response")
   
   
@@ -257,4 +260,6 @@ arkaute_biomass <- arkaute |> filter(!is.na(biomass_mice_lm))
            effect_sign, variable.bis
     )
  
+ model_comparison |> write.csv("results/model_comparison_notime.csv")
  
+  }

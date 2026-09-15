@@ -362,6 +362,9 @@ for(i in seq_along(glmm_em_list)){
   model_agg |> write.csv("results/model_comparison_time_treatment.csv")
   models_dynamics |> write.csv("results/model_comparison_time_dynamics.csv")
   
+  glmm_treatment |>  write.csv("results/GLMM_agg.csv")
+  glmm_dynamics  |>  write.csv("results/GLMM_dyn.csv")
+  
 }
 
 

@@ -273,8 +273,23 @@ arkaute <- read.csv("data/processed_data/arkaute.csv") %>%
   
   
   ## Biomass ##
-  m1_gam_biomass <- gam(biomass_mice_lm ~ treatment + s(plot, bs = "re"), data = arkaute_biomass, family = Gamma(link = "log"))
+  m1_gam_biomass <- gam(biomass_mice_lm ~ treatment + s(plot, bs = "re"),
+                        data = arkaute_biomass, family = Gamma(link = "log"))
+  
+  m2_gam_biomass <- gam(biomass_mice_lm ~ treatment + s(plot, bs = "re"), 
+                             data = arkaute_biomass, 
+                             family = Gamma(link = "log"), 
+                             method = "REML")
+  
+  m3_gam_biomass <- gam(biomass_mice_lm ~ treatment + s(plot, bs = "re"), 
+                           data = arkaute_biomass, 
+                           family = tw(), 
+                           method = "REML")
+  
+  AIC(m1_gam_biomass, m2_gam_biomass, m3_gam_biomass)
   diagnose_gam(m1_gam_biomass)
+  diagnose_gam(m2_gam_biomass)
+  diagnose_gam(m3_gam_biomass)
   
   
   
