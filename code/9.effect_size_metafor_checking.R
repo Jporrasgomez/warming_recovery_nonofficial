@@ -17,8 +17,6 @@ arkaute <- read.csv("data/processed_data/arkaute.csv") %>%
   mutate(
     year = as.factor(year),
     date = ymd(date),
-    omw_date = as.factor(omw_date),
-    one_month_window = as.factor(one_month_window),
     sampling = as.factor(sampling),
     plot = as.factor(plot),
     treatment = as.factor(treatment))  %>%
@@ -54,18 +52,21 @@ library(metafor)
 
 for(i in seq_along(variables)){
 
-data <- arkaute_no0 %>%
-  distinct(sampling, date, plot, treatment, .data[[variables[i]]]) %>%
-  group_by(treatment) %>%
-  mutate(
-    mean_variable = mean(.data[[paste0(variables[i])]], na.rm = T),   # Usamos .data para referirnos a la columna
-    sd_variable = sd(.data[[paste0(variables[i])]], na.rm = T),
-    n = n()
-  ) %>%
-  ungroup() %>%
-  select(treatment, n, mean_variable, sd_variable) %>%
-  distinct()
-  
+plot_level <- arkaute_no0 %>% 
+  filter(!is.na(.data[[paste0(variables[i])]])) %>% 
+  group_by(plot, treatment) %>% 
+  summarise(plot_mean = mean(.data[[paste0(variables[i])]]), .groups = "drop")
+
+data <- plot_level %>% 
+  group_by(treatment) %>% 
+  summarise(
+    mean_variable = mean(plot_mean),
+    sd_variable = sd(plot_mean),
+    n = n(),
+    .groups = "drop"
+  )
+
+
 
 rr_data <- data %>%
   filter(treatment != "c") %>%

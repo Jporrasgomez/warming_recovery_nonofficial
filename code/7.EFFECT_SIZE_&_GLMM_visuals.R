@@ -113,18 +113,20 @@ source("code/functions/gg_aggregated_function_2.R")   # Function for visualizati
 source("code/functions/gg_dynamics_function2.R")      # Function for visualization of dynamics analysis
 
 
-k = 1    # k = 1: main variables
-# k = 2: biomass variables for sensitivity analysis
+k = 1   # k = 1: To see all (but biomass raw and biomass LM)
+         # k = 2: biomass variables for sensitivity analysis
+         # k = 3: Richness, abundance and biomass for warming effects on recovery()
 
 width_dynamics = 3 # size for plots (1:3) 1 for agg analysis, 3 for dynamics
 
-#{
+{
   
   # 1. Log Response Analysis: 
   
   list_arkaute <- list(arkaute_no0, arkaute)
   list_agg <- list()
   list_dyn <- list()
+  
   for(i in seq_along(variables)){ 
     
     
@@ -278,12 +280,22 @@ width_dynamics = 3 # size for plots (1:3) 1 for agg analysis, 3 for dynamics
   
   
   
+  limits_warming_recovery <- c("richness",                        
+                               "abundance",                            
+                               "biomass_mice_lm"                   
+  )
   
-  limits_list <- list(limits_main_variables, limits_biomass_variables)
+  labels_warming_recovery <- c("richness" = "Richness",            
+                             "abundance" = "Cover",                 
+                             "biomass_mice_lm" = "Biomass"    
+  )    
+  
+  
+  limits_list <- list(limits_main_variables, limits_biomass_variables, limits_warming_recovery)
   
   limits_variables <- limits_list[[k]]
   
-  labels_list <- list(labels_main_variables, labels_biomass_variables)
+  labels_list <- list(labels_main_variables, labels_biomass_variables, labels_warming_recovery)
   
   labels_variables <- labels_list[[k]]
   
@@ -388,7 +400,7 @@ width_dynamics = 3 # size for plots (1:3) 1 for agg analysis, 3 for dynamics
   
   gg_wp <-
     (gg_eff_agg_wp2 + 
-       gg_eff_dynamics_wp2 + theme (legend.position = "none") + 
+       gg_eff_dynamics_wp2 + theme (legend.position = "none") +
        plot_layout(guides = "collect",
                    widths = c(1, width_dynamics))) +
     plot_annotation(theme = theme(legend.position = "bottom"))
@@ -406,6 +418,13 @@ ggsave("results/Figure_2.png", plot = gg_control, dpi = 600)
 ggsave("results/Figure_2.svg", plot = gg_control, dpi = 600)
 ggsave("results/Figure_3.png", plot = gg_wp, dpi = 600)
 ggsave("results/Figure_3.svg", plot = gg_wp, dpi = 600)
-#
+
+
+ggsave("results/Figure_sensitivity_biomass_control.png", plot = gg_control, dpi = 600)
+ggsave("results/Figure_sensitivity_biomass_control.svg", plot = gg_control, dpi = 600)
+ggsave("results/Figure_sensitivity_biomass_warmingrecover.png", plot = gg_wp, dpi = 600)
+ggsave("results/Figure_sensitivity_biomass_warmingrecover.svg", plot = gg_wp, dpi = 600)
+
+
 
 
