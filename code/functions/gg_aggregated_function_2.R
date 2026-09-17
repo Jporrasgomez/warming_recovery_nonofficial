@@ -40,7 +40,7 @@ ggagg2 <- function(data, palette, labels, colorline, limitvar, labelvar, breaks_
         y = ifelse(eff_value < 0, lower_limit - scale, upper_limit + scale),
         label = case_when(
           glmm_effect_significance == "significant"     ~ "*",
-          glmm_effect_significance == "marginal"        ~ "#",
+          glmm_effect_significance == "marginal"        ~ "·",
           glmm_effect_significance == "non-significant" ~ NA_character_
         )
       ),

@@ -33,6 +33,8 @@ arkaute_sla       <- arkaute |> filter(!is.na(SLA))
 arkaute_ldmc      <- arkaute |> filter(!is.na(LDMC))
 arkaute_leafN     <- arkaute |> filter(!is.na(leafN))
 arkaute_biomass   <- arkaute |> filter(!is.na(biomass_mice_lm))
+arkaute_biomass_mice <- arkaute |> filter(!is.na(biomass_mice))
+arkaute_biomass_raw <- arkaute |> filter(!is.na(biomass_raw), biomass_raw != 0 )
 
 
 
@@ -302,20 +304,109 @@ m4_biomass <- glmmTMB(biomass_mice_lm ~ treatment * sampling + ar1(sampling + 0 
                       dispformula = ~treatment,
                       data = arkaute_biomass,  family = lognormal(link = "log"))
 
+m5_biomass <- glmmTMB(biomass_mice_lm ~ treatment * sampling + (1 | plot),
+                              dispformula = ~ treatment + sampling,
+                              data = arkaute_biomass,
+                              family = lognormal())
+
+m6_biomass <- glmmTMB(biomass_mice_lm ~ treatment * sampling + (1 | plot),
+                      dispformula = ~ treatment + sampling,
+                      data = arkaute_biomass,
+                      family = lognormal())
+
+m7_biomass <- glmmTMB(biomass_mice_lm ~ treatment * sampling + ar1(sampling + 0 | plot),
+                                  dispformula = ~ treatment + sampling,
+                                  data = arkaute_biomass,
+                                  family = lognormal())
+
+m8_biomass <- glmmTMB(biomass_mice_lm ~ treatment * sampling + (1 | plot),
+                            dispformula = ~ treatment + sampling,
+                            data = arkaute_biomass,
+                            family = Gamma(link = "log"))
 
 
 diagnose_glmm(m1_biomass)
 diagnose_glmm(m2_biomass)
 diagnose_glmm(m3_biomass)
 diagnose_glmm(m4_biomass)
+diagnose_glmm(m5_biomass)
+diagnose_glmm(m6_biomass)
+diagnose_glmm(m7_biomass)
+diagnose_glmm(m8_biomass) # Best
 
-diagnose_glmm(m3_biomass, data = arkaute_biomass, group_var = "treatment")
+as.data.frame(pairs(emmeans(m8_biomass, ~ treatment, type = "response"), adjust = "tukey"))
 
+em_treat_biomass_raw <- emmeans(m8_biomass, ~ treatment, type = "response")
 
-AIC(m1_biomass)
+AIC(m1_biomass, m2_biomass, m3_biomass, m4_biomass, m5_biomass, m6_biomass, m7_biomass, m8_biomass)
 AIC(m2_biomass)
 AIC(m3_biomass)
 AIC(m4_biomass)
 
 
 
+
+
+
+# Biomass with mice imputation only #
+
+hist(arkaute_biomass_mice$biomass_mice)
+
+m1_biomass_mice <- glmmTMB(biomass_mice ~ treatment * sampling + ar1(sampling + 0 | plot),
+                      dispformula = ~treatment,
+                      data = arkaute_biomass_mice,  family = Gamma(link = "log"))
+
+m2_biomass_mice <- glmmTMB(biomass_mice ~ treatment * sampling + ar1(sampling + 0 | plot),
+                           dispformula = ~treatment,
+                           data = arkaute_biomass_mice,  family = lognormal())
+
+
+m3_biomass_mice <- glmmTMB(biomass_mice ~ treatment * sampling + (1 | plot),
+                           dispformula = ~treatment,
+                           data = arkaute_biomass_mice,  family = Gamma(link = "log"))
+
+
+
+
+AIC(m1_biomass_mice, m2_biomass_mice, m3_biomass_mice)
+diagnose_glmm(m1_biomass_mice)
+diagnose_glmm(m2_biomass_mice)
+diagnose_glmm(m3_biomass_mice) # Best, despite not having the autocorrelation term 
+
+    
+
+
+# Biomass raw #
+hist(arkaute_biomass_raw$biomass_raw)
+min(arkaute_biomass_raw$biomass_raw)
+
+m1_biomass_raw <- glmmTMB(biomass_raw ~ treatment * sampling + ar1(sampling + 0 | plot),
+                           dispformula = ~treatment,
+                           data = arkaute_biomass_raw,  family = Gamma(link = "log"))
+
+m2_biomass_raw <- glmmTMB(biomass_raw ~ treatment * sampling + ar1(sampling + 0 | plot),
+                           dispformula = ~treatment,
+                           data = arkaute_biomass_raw,  family = lognormal())
+
+
+m3_biomass_raw <- glmmTMB(biomass_raw ~ treatment * sampling + (1 | plot),
+                           dispformula = ~treatment,
+                           data = arkaute_biomass_raw,  family = Gamma(link = "log"))
+
+
+m4_biomass_raw <- glmmTMB(biomass_raw ~ treatment * sampling + (1 | plot),
+                          dispformula = ~treatment,
+                          data = arkaute_biomass_raw,  family = lognormal())
+
+
+
+
+AIC(m1_biomass_raw, m2_biomass_raw, m3_biomass_raw, m4_biomass_raw)
+diagnose_glmm(m1_biomass_raw)
+diagnose_glmm(m2_biomass_raw)
+diagnose_glmm(m3_biomass_raw) 
+diagnose_glmm(m4_biomass_raw) # Best, despite not having the autocorrelation term 
+
+
+
+    

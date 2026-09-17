@@ -47,6 +47,8 @@ arkaute <- read.csv("data/processed_data/arkaute.csv") %>%
   arkaute_ldmc <- arkaute |> filter(!is.na(LDMC))
   arkaute_leafN <- arkaute |> filter(!is.na(leafN))
   arkaute_biomass <- arkaute |> filter(!is.na(biomass_mice_lm))
+  arkaute_biomass_mice <- arkaute |> filter(!is.na(biomass_mice))
+  arkaute_biomass_raw <- arkaute |> filter(!is.na(biomass_raw))
   
   # Diagnosis functions
   
@@ -190,6 +192,16 @@ arkaute <- read.csv("data/processed_data/arkaute.csv") %>%
   diagnose_glmm(m2_glmm_biomass)
   AIC(m1_glmm_biomass, m2_glmm_biomass)
   
+  
+  ### BIOMASS with only MICE imputation ###
+  
+  m1_glmm_biomass <- glmmTMB(biomass_mice_lm ~ treatment + (1 | plot), data = arkaute_biomass, family = Gamma(link = "log"))
+  m2_glmm_biomass <- glmmTMB(biomass_mice_lm ~ treatment + (1 | plot),
+                             dispformula = ~ treatment, 
+                             data = arkaute_biomass, family = Gamma(link = "log"))
+  diagnose_glmm(m1_glmm_biomass)
+  diagnose_glmm(m2_glmm_biomass)
+  AIC(m1_glmm_biomass, m2_glmm_biomass)
   
   
   

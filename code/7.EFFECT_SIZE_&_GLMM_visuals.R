@@ -106,14 +106,14 @@ variables <-
   ) 
 
 # Charging functions
-source("code/functions/eff_size_LRR_funcion_delta.R")      # Function of LRR at aggregated level CORRECTED
+source("code/functions/eff_size_LRR_function_delta.R")      # Function of LRR at aggregated level CORRECTED
 #source("code/functions/eff_size_LRR_function.R")      # Function of LRR at aggregated level
 source("code/functions/new_dynamics.R")               # Function of LRR at dynamics level
 source("code/functions/gg_aggregated_function_2.R")   # Function for visualization of aggregated analysis
 source("code/functions/gg_dynamics_function2.R")      # Function for visualization of dynamics analysis
 
 
-k = 1   # k = 1: To see all (but biomass raw and biomass LM)
+k = 2  # k = 1: To see all (but biomass raw and biomass LM)
          # k = 2: biomass variables for sensitivity analysis
          # k = 3: Richness, abundance and biomass for warming effects on recovery()
 
@@ -146,7 +146,6 @@ width_dynamics = 3 # size for plots (1:3) 1 for agg analysis, 3 for dynamics
   agg %>%   write.csv("results/effect_size_aggregated.csv")
 
   agg_glmm  <-  read.csv("results/GLMM_agg.csv") |> select(-X) |> 
-    filter(!variable %in% c("biomass_mice", "biomass_raw")) |> 
     mutate(
       variable = fct_recode(variable,
                             "Y_zipf" = "evenness",
@@ -197,8 +196,7 @@ width_dynamics = 3 # size for plots (1:3) 1 for agg analysis, 3 for dynamics
   dyn_01 <- dyn |> 
     select(sampling, year, date, date_label_noyear,  eff_descriptor, variable, eff_value,
            lower_limit, upper_limit, null_effect, scale) |> 
-    filter(sampling %in% c("0", "1"),
-           !variable %in% c("biomass_mice", "biomass_raw")) |> 
+    filter(sampling %in% c("0", "1")) |> 
     mutate(
       glmm_estimate = NA, glmm_SE = NA, glmm_p_value = NA, glmm_AIC = NA, glmm_estimate_type = NA,
       glmm_effect_sign = NA, glmm_effect_significance = NA
@@ -206,7 +204,6 @@ width_dynamics = 3 # size for plots (1:3) 1 for agg analysis, 3 for dynamics
     
   
   dyn_glmm  <-  read.csv("results/GLMM_dyn.csv") |> select(-X) |> 
-    filter(!variable %in% c("biomass_mice", "biomass_raw")) |> 
     mutate(
       variable = fct_recode(variable,
                             "Y_zipf" = "evenness",
@@ -409,7 +406,7 @@ width_dynamics = 3 # size for plots (1:3) 1 for agg analysis, 3 for dynamics
 
 View(geary_test_treatment)
 View(false_cases_sampling)
-print(gg_control) 
+print(gg_control)
 print(gg_wp) 
 
 
@@ -420,10 +417,15 @@ ggsave("results/Figure_3.png", plot = gg_wp, dpi = 600)
 ggsave("results/Figure_3.svg", plot = gg_wp, dpi = 600)
 
 
-ggsave("results/Figure_sensitivity_biomass_control.png", plot = gg_control, dpi = 600)
-ggsave("results/Figure_sensitivity_biomass_control.svg", plot = gg_control, dpi = 600)
-ggsave("results/Figure_sensitivity_biomass_warmingrecover.png", plot = gg_wp, dpi = 600)
-ggsave("results/Figure_sensitivity_biomass_warmingrecover.svg", plot = gg_wp, dpi = 600)
+
+# Biomass sensitivity
+
+ggsave("results/Supplementary_figure_biomass_c.png", plot = gg_control, dpi = 600)
+ggsave("results/Supplementary_figure_biomass_c.svg", plot = gg_control, dpi = 600)
+ggsave("results/Supplementary_figure_biomass_wp.png", plot = gg_wp, dpi = 600)
+ggsave("results/Supplementary_figure_biomass_wp.svg", plot = gg_wp, dpi = 600)
+
+
 
 
 

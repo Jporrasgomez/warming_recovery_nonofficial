@@ -613,6 +613,7 @@ biomass_original <- rbind(biomass_original_raw, biomass_original_mice) %>%
 
 biomass_data_all <- merge(biomass_sensitivity, biomass_original) %>% 
   mutate(treatment = as.factor(treatment))
+biomass_data_all |>  write.csv("data/processed_data/biomass_data_Z.csv")
 
 
 
@@ -622,7 +623,7 @@ z_levels <- colnames(biomass_data_all)[6:ncol(biomass_data_all)]
 biomass_no0 <- biomass_data_all %>% 
   filter(sampling != "0")
 
-source("code/functions/eff_size_LRR_function.R")
+source("code/functions/eff_size_LRR_function_delta.R")
 
 list_eff <- list()
 counter = 0
@@ -695,14 +696,14 @@ ggplot(data, aes(
   geom_linerange(aes(ymin = lower_limit, ymax = upper_limit),
                  linewidth = 1, alpha = 1) +
   
-  geom_point(size = 2.5) +
+  geom_point(size = 6) +
   
   geom_text(aes(
     y = ifelse(eff_value < 0, lower_limit - 0.1, upper_limit + 0.1),
     label = ifelse(null_effect == "NO", "*", NA_character_)
   ),
   show.legend = FALSE,
-  size = 8) +
+  size = 10) +
   
   scale_color_manual(values = palette_RR_wp, labels = labels_RR_wp2) +
   
@@ -773,7 +774,7 @@ ggplot(data, aes(
     ) +
     
     geom_point(
-      size = 2.5,
+      size = 6,
       position = pos_d
     ) +
     
@@ -784,7 +785,7 @@ ggplot(data, aes(
       ),
       position = pos_d,
       show.legend = FALSE,
-      size = 8
+      size = 10
     ) +
    
     
