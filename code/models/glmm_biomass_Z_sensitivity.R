@@ -27,35 +27,36 @@ biomass_data_all <-   read.csv("data/processed_data/biomass_data_Z.csv") |> sele
 
 
 raw_z_1_2 <- biomass_data_all |>  filter(biomass_level == "biomass_raw") |>
-  select(-z_5_6, -z_2_3_original) |> filter(!is.na(biomass_level))
+  select(-z_5_6, -z_2_3_original) |>  rename(biomass = z_1_2) |> filter(!is.na(biomass), biomass != 0) 
 
 mice_z_1_2 <- biomass_data_all |>  filter(biomass_level == "biomass_mice") |>
-  select(-z_5_6, -z_2_3_original)|> filter(!is.na(biomass_level))
+  select(-z_5_6, -z_2_3_original)|>  rename(biomass = z_1_2) |> filter(!is.na(biomass), biomass != 0)
 
 final_z_1_2 <- biomass_data_all |>  filter(biomass_level == "biomass_mice_lm") |>
-  select(-z_5_6, -z_2_3_original)|> filter(!is.na(biomass_level))
+  select(-z_5_6, -z_2_3_original)|>  rename(biomass = z_1_2) |> filter(!is.na(biomass), biomass != 0)
 
 
 
 raw_z_5_6 <- biomass_data_all |>  filter(biomass_level == "biomass_raw") |>
-  select(-z_1_2, -z_2_3_original)|> filter(!is.na(biomass_level))
+  select(-z_1_2, -z_2_3_original)|>  rename(biomass = z_5_6) |> filter(!is.na(biomass), biomass != 0)
 
 mice_z_5_6 <- biomass_data_all |>  filter(biomass_level == "biomass_mice") |>
-  select(-z_1_2, -z_2_3_original)|> filter(!is.na(biomass_level))
+  select(-z_1_2, -z_2_3_original)|>  rename(biomass = z_5_6) |> filter(!is.na(biomass), biomass != 0)
 
 final_z_5_6 <- biomass_data_all |>  filter(biomass_level == "biomass_mice_lm") |>
-  select(-z_1_2, -z_2_3_original)|> filter(!is.na(biomass_level))
+  select(-z_1_2, -z_2_3_original)|>  rename(biomass = z_5_6) |> filter(!is.na(biomass), biomass != 0)
 
 
 
 raw_z_2_3 <- biomass_data_all |>  filter(biomass_level == "biomass_raw") |>
-  select(-z_1_2, -z_5_6)|> filter(!is.na(biomass_level))
+  select(-z_1_2, -z_5_6)|>  rename(biomass = z_2_3_original) |> filter(!is.na(biomass), biomass != 0)
 
 mice_z_2_3 <- biomass_data_all |>  filter(biomass_level == "biomass_mice") |>
-  select(-z_1_2, -z_5_6)|> filter(!is.na(biomass_level))
+  select(-z_1_2, -z_5_6)|>  rename(biomass = z_2_3_original) |> filter(!is.na(biomass), biomass != 0)
 
 final_z_2_3 <- biomass_data_all |>  filter(biomass_level == "biomass_mice_lm") |>
-  select(-z_1_2, -z_5_6)|> filter(!is.na(biomass_level))
+  select(-z_1_2, -z_5_6)|>  rename(biomass = z_2_3_original) |> filter(!is.na(biomass), biomass != 0)
+
 
 
 
@@ -80,7 +81,7 @@ diagnose_glmm <- function(model, data = NULL, group_var = NULL) {
   
   cat("\n3. Outliers Test:\n")
   cat("   -> Evaluates extreme values. Tests whether the frequency of 0 or 1 scaled residuals exceeds expectation.\n")
-  print(DHARMa::testOutliers(sim))
+  print(suppressWarnings(DHARMa::testQuantiles(sim)))
   
   cat("\n4. Quantiles Test:\n")
   cat("   -> Evaluates residual patterns across predictions. Detects non-linearities or heteroscedasticity along fitted values.\n")
@@ -101,55 +102,41 @@ diagnose_glmm <- function(model, data = NULL, group_var = NULL) {
 }
 
 
-
-#### BIOMASS ###
-#glmm_biomass <- glmmTMB(biomass_mice_lm ~ treatment * sampling + ar1(sampling + 0 | plot),
-#                        dispformula = ~treatment,
-#                        data = arkaute_biomass,  family = Gamma(link = "log"))
-#em_treat_biomass <- emmeans(glmm_biomass, ~ treatment, type = "response")
-#em_time_biomass <- emmeans(glmm_biomass, ~ treatment | sampling, type = "response")
-#
-#
-### BIOMASS - just MICE ####
-#
-#glmm_biomass_mice <- glmmTMB(biomass_mice ~ treatment * sampling + (1 | plot),
-#                             dispformula = ~treatment,
-#                             data = arkaute_biomass_mice,  family = Gamma(link = "log"))
-#em_treat_biomass_mice <- emmeans(glmm_biomass_mice, ~ treatment, type = "response")
-#em_time_biomass_mice <- emmeans(glmm_biomass_mice, ~ treatment | sampling, type = "response")
-#
-#
-### BIOMASS raw ##
-#
-#glmm_biomass_raw <- glmmTMB(biomass_level ~ treatment * sampling + (1 | plot),
-#                            dispformula = ~ treatment,
-#                            data = final_z_2_3,  family = Gamma(link = "log"))
+ar_test <- function(model, data){
+  testTemporalAutocorrelation(recalculateResiduals(simulateResiduals(model),
+                                                   group = data$sampling_num),
+                              time = sort(unique(data$sampling_num)))
+  
+}# If p-value is higher than 0.05 we do not need autocorrelation term
 
 
+# I will use the glmm biomass model we use for the main analysis
+glmm_biomass_str <- function(dataset) {
+  model <- glmmTMB(biomass ~ treatment * sampling + (1 | plot),
+                   dispformula = ~ treatment + sampling, 
+                   data = dataset,  family = Gamma(link = "log"))
+  diagnose_glmm(model)
+  ar_test(model, dataset)
+}
 
 
+glmm_biomass_str(raw_z_2_3) # Good fit, no need of ar1 term
+glmm_biomass_str(mice_z_2_3) # Good fit, no need of ar1 term
+glmm_biomass_str(final_z_2_3) # Good fit, no need of ar1 term
 
+glmm_biomass_str(raw_z_5_6) # Good fit, no need of ar1 term
+glmm_biomass_str(mice_z_5_6) # Good fit, no need of ar1 term
+glmm_biomass_str(final_z_5_6) # Good fit, no need of ar1 term
 
-
-
-### BIOMASS MICE + LM ####
-
-# Z = 2/3 (original)
-# Using the same model as in the main code
-
-m1_biomass_2_3 <- glmmTMB(z_2_3_original ~ treatment * sampling + ar1(sampling + 0 | plot),
-                        dispformula = ~treatment,
-                        data = final_z_2_3,  family = Gamma(link = "log"))
+glmm_biomass_str(raw_z_1_2) # Good fit, no need of ar1 term
+glmm_biomass_str(mice_z_1_2) # Good fit, no need of ar1 term
+glmm_biomass_str(final_z_1_2) # Could improve fit, but will accept it. No need of ar1 term
 
 
 
-diagnose_glmm(m1_biomass_2_3)
-diagnose_glmm(m2_richness)
-diagnose_glmm(m3_richness)
-diagnose_glmm(m4_richness)
 
-AIC(m1_richness)
-AIC(m2_richness)
-AIC(m3_richness)
-AIC(m4_richness)
+
+
+
+
 
