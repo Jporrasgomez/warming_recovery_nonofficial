@@ -40,58 +40,11 @@ arkaute_no0 <- arkaute %>%
 
 
 
+library(ggpmisc) 
 
+
+BEF_sampling <- 
 arkaute_no0 |> 
-  select(treatment, plot, sampling, richness, biomass_mice_lm) |> 
-  #filter(treatment %in% c("p", "wp")) |> 
-  ggplot(aes(x = richness, y = biomass_mice_lm, color = treatment)) +
-  facet_wrap(~treatment, ncol = 2, scales = "free") + 
-  geom_point() +
-  geom_smooth(method = "lm") 
-
-
-
-arkaute_no0 |> 
-  select(treatment, plot, sampling, richness, biomass_mice_lm) |> 
-  filter(treatment %in% c("p", "wp")) |> 
-  ggplot(aes(x = richness, y = biomass_mice_lm, color = treatment)) +
-  geom_point() +
-  geom_smooth(method = "lm") 
-
-
-
-
-
-arkaute_no0 |> 
-  select(treatment, plot, sampling, richness, biomass_mice_lm) |> 
-  pivot_longer(
-    cols = c("richness", "biomass_mice_lm"), 
-    names_to = "variable", 
-    values_to = "value"
-  ) |> 
-  group_by(treatment, sampling, variable) |> 
-  summarize(
-    mean_sampling = mean(value, na.rm = T)
-  ) |> 
-  pivot_wider(
-    id_cols = c("treatment", "sampling"), 
-    names_from = "variable", 
-    values_from = "mean_sampling"
-  ) |> 
-  rename(
-    biomass_mean_sampling = biomass_mice_lm, 
-    richness_mean_sampling = richness
-  ) |> 
-  #filter(treatment %in% c("p", "wp")) |> 
-  ggplot(aes(x = richness_mean_sampling, y = biomass_mean_sampling, color = treatment)) +
-  facet_wrap(~treatment, ncol = 2, scales = "free") + 
-  geom_point() +
-  geom_smooth(method = "lm") 
-
-library(ggpmisc) # Paquete para añadir ecuaciones y métricas estadísticas al gráfico
-
-arkaute_no0 |> 
-  # Simplificación del cálculo de promedios sin necesidad de pivotar
   group_by(treatment, sampling) |> 
   summarize(
     richness_mean_sampling = mean(richness, na.rm = TRUE),
@@ -99,97 +52,127 @@ arkaute_no0 |>
     .groups = "drop"
   ) |> 
   ggplot(aes(x = richness_mean_sampling, y = biomass_mean_sampling, color = treatment, fill = treatment)) +
-  facet_wrap(~treatment, ncol = 4, scales = "free_x") +
-  geom_point() +
+  facet_wrap(~treatment, ncol = 4, scales = "free_x",
+             labeller = as_labeller(c(
+               c     = "Control",
+               p    = "Perturbation",
+               w = "Warming",
+               wp = "Combined"))) +
+  geom_point(size = 4, alpha = 0.8) +
   geom_smooth(method = "lm", formula = y ~ x) +
-  # Añade ecuación, R2 y p-valor automáticamente en cada facet
   stat_poly_eq(
     use_label("eq"),
     formula = y ~ x,
-    label.x = "left", label.y = 0.95
+    label.x = "left", label.y = 0.95,
+    color = "black"
   ) +
-  # Capa 2: R2 (centro)
   stat_poly_eq(
     use_label("R2"),
     formula = y ~ x,
-    label.x = "left", label.y = 0.90
+    label.x = "left", label.y = 0.90,
+    color = "black"
   ) +
-  # Capa 3: p-value (abajo)
   stat_poly_eq(
     use_label("p"),
     formula = y ~ x,
-    label.x = "left", label.y = 0.85
+    label.x = "left", label.y = 0.85,
+    color = "black"
   ) +
   scale_color_manual(values = palette_CB, labels = labels1) +
   scale_fill_manual(values = palette_CB, labels = labels1)+
-  labs(x = "Mean richness at sampling level", y = "Mean biomass at sampling level") +
-  theme(legend.position = "bottom")
+  labs(x = NULL, y = "Biomass") +
+  theme(
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = "white", color = "black"),
+    text = element_text(size = 14),
+    strip.background = element_blank(),
+    strip.text = element_text(face = "bold", size = 14),
+    strip.placement = "outside",                
+    strip.text.y.left = element_text(            
+      angle = 90, face = "bold", size = 14
+    ),
+    axis.text.y = element_text(hjust = 0.5, face = "plain", size = 12),
+    axis.text.x = element_text(face = "plain", size = 12),
+    legend.position = " none",
+    legend.text = element_text(size = 14, face = "plain"),
+    legend.key = element_rect(fill = "white", colour = NA)
+  )
   
 
 
 
 
 
+BEF_plot <- 
 arkaute_no0 |> 
   ggplot(aes(x = richness, y = biomass_mice_lm, color = treatment, fill = treatment)) +
-  facet_wrap(~treatment, ncol = 4, scales = "free_x") +
-  geom_point() +
+  facet_wrap(~treatment, ncol = 4, scales = "free_x",
+             labeller = as_labeller(c(
+               c     = "Control",
+               p    = "Perturbation",
+               w = "Warming",
+               wp = "Combined"))) +
+  geom_point(size = 2, alpha = 0.6) +
   geom_smooth(method = "lm", formula = y ~ x) +
-  # Capa 1: Ecuación (arriba)
   stat_poly_eq(
     use_label("eq"),
     formula = y ~ x,
-    label.x = "left", label.y = 0.95
+    label.x = "left", label.y = 0.95,
+    color = "black"
   ) +
-  # Capa 2: R2 (centro)
   stat_poly_eq(
     use_label("R2"),
     formula = y ~ x,
-    label.x = "left", label.y = 0.90
+    label.x = "left", label.y = 0.90,
+    color = "black"
   ) +
-  # Capa 3: p-value (abajo)
   stat_poly_eq(
     use_label("p"),
     formula = y ~ x,
-    label.x = "left", label.y = 0.85
+    label.x = "left", label.y = 0.85,
+    color = "black"
   ) +
   scale_color_manual(values = palette_CB, labels = labels1) +
-  scale_fill_manual(values = palette_CB, labels = labels1) +
-  labs(x = "Richness at plot level", y = "Biomass at plot level") +
-  theme(legend.position = "bottom")
+  scale_fill_manual(values = palette_CB, labels = labels1)+
+  labs(x = "Richness", y = "Biomass") +
+  theme(
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = "white", color = "black"),
+    text = element_text(size = 14),
+    strip.background = element_blank(),
+    strip.text = element_blank(),
+    strip.placement = "outside",                
+    strip.text.y.left = element_text(            
+      angle = 90, face = "bold", size = 14
+    ),
+    axis.text.y = element_text(hjust = 0.5, face = "plain", size = 12),
+    axis.text.x = element_text(face = "plain", size = 12),
+    legend.position = " none",
+    legend.text = element_text(size = 14, face = "plain"),
+    legend.key = element_rect(fill = "white", colour = NA)
+  )
 
-
-
+#Checking
 arkaute_no0 |> 
-  select(treatment, plot, sampling, richness, biomass_mice_lm) |> 
-  pivot_longer(
-    cols = c("richness", "biomass_mice_lm"), 
-    names_to = "variable", 
-    values_to = "value"
-  ) |> 
-  group_by(treatment, sampling, variable) |> 
-  summarize(
-    mean_sampling = mean(value, na.rm = T)
-  ) |> 
-  pivot_wider(
-    id_cols = c("treatment", "sampling"), 
-    names_from = "variable", 
-    values_from = "mean_sampling"
-  ) |> 
-  rename(
-    biomass_mean_sampling = biomass_mice_lm, 
-    richness_mean_sampling = richness
-  ) |> 
-  filter(treatment %in% c("p", "wp")) |> 
-  ggplot(aes(x = richness_mean_sampling, y = biomass_mean_sampling, color = treatment)) +
-  #facet_wrap(~treatment, ncol = 2, scales = "free") + 
-  geom_point() +
-  geom_smooth(method = "lm") 
+  filter(treatment == "w") |> 
+  lm(biomass_mice_lm ~ richness, data = _) |> 
+  summary()
 
 
 
+#print(BEF_sampling) 
+#print(BEF_plot)
+
+gg_BEF <- 
+BEF_sampling + 
+  BEF_plot + theme (legend.position = "none") +
+  plot_layout(guides = "collect", ncol = 1) +
+  plot_annotation(theme = theme(legend.position = "bottom"),
+                  tag_levels = 'A',)
 
 
+
+ggsave("results/BEF.png", plot = gg_BEF, dpi = 600)
 
 
 

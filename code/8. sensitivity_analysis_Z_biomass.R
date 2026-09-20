@@ -582,7 +582,7 @@ biomass_sensitivity <- rbind(biomass_community_raw_wide, biomass_community_mice_
 #sensitivity_biomass %>%  write.csv("results/sensitivity_biomass.csv")
 
 
-
+################################# JOINING ALL BIOMASS RESUTS ####################################################
 
 ### Adding original biomass info
 
@@ -609,13 +609,127 @@ biomass_original <- rbind(biomass_original_raw, biomass_original_mice) %>%
 
 
 
-
-
 biomass_data_all <- merge(biomass_sensitivity, biomass_original) %>% 
   mutate(treatment = as.factor(treatment))
 biomass_data_all |>  write.csv("data/processed_data/biomass_data_Z.csv")
 
 
+
+
+###################### GLMMS ##############################################################################
+
+common_function <- function(data){
+  data |> 
+    filter(!contrast %in% c("p - w", "p / w", "w - wp", "w / wp")) |> 
+    rename(p_value = p.value) |> 
+    mutate(
+      effect_sign = case_when(
+        estimate_type == "substract" & estimate < 0 ~ "positive",
+        estimate_type == "substract" & estimate > 0 ~ "negative",
+        estimate_type == "ratio" & estimate > 1     ~ "negative", 
+        estimate_type == "ratio" & estimate < 1     ~ "positive"
+      ),
+      effect_significance = case_when(
+        p_value < 0.05                     ~ "significant",
+        p_value >= 0.05  & p_value < 0.10  ~ "marginal",
+        TRUE                               ~ "non-significant"
+      ),
+      eff_descriptor = case_when(
+        contrast %in% c("c - p", "c / p")    ~ "p_vs_c", 
+        contrast %in% c("c - w" , "c / w")   ~ "w_vs_c", 
+        contrast %in% c("c - wp", "c / wp")  ~ "wp_vs_c", 
+        contrast %in% c("p - wp", "p / wp")  ~ "wp_vs_p"
+      ))
+}
+
+
+biomass_data_all <- biomass_data_all |> 
+  mutate(
+    date      = ymd(date),
+    sampling = factor(sampling, levels = as.character(sort(unique(as.numeric(as.character(sampling)))))),
+    plot      = factor(plot),
+    treatment = factor(treatment)
+  ) %>%
+  filter(sampling != "0",
+         sampling != "1") |> 
+  arrange(plot, sampling)  
+
+
+
+
+biomass_list <- list()
+biomass_list[[1]] <- biomass_data_all |>  filter(biomass_level == "biomass_raw") |>
+  select(-z_5_6, -z_2_3_original) |>  rename(biomass = z_1_2) |> filter(!is.na(biomass), biomass != 0) |>  mutate(z = paste0("z_1_2"))
+
+biomass_list[[2]] <- biomass_data_all |>  filter(biomass_level == "biomass_mice") |>
+  select(-z_5_6, -z_2_3_original)|>  rename(biomass = z_1_2) |> filter(!is.na(biomass), biomass != 0) |>  mutate(z = paste0("z_1_2"))
+
+biomass_list[[3]] <- biomass_data_all |>  filter(biomass_level == "biomass_mice_lm") |>
+  select(-z_5_6, -z_2_3_original)|>  rename(biomass = z_1_2) |> filter(!is.na(biomass), biomass != 0) |>  mutate(z = paste0("z_1_2"))
+
+
+
+biomass_list[[4]] <- biomass_data_all |>  filter(biomass_level == "biomass_raw") |>
+  select(-z_1_2, -z_2_3_original)|>  rename(biomass = z_5_6) |> filter(!is.na(biomass), biomass != 0) |>  mutate(z = paste0("z_5_6"))
+
+biomass_list[[5]] <- biomass_data_all |>  filter(biomass_level == "biomass_mice") |>
+  select(-z_1_2, -z_2_3_original)|>  rename(biomass = z_5_6) |> filter(!is.na(biomass), biomass != 0) |>  mutate(z = paste0("z_5_6"))
+
+biomass_list[[6]] <- biomass_data_all |>  filter(biomass_level == "biomass_mice_lm") |>
+  select(-z_1_2, -z_2_3_original)|>  rename(biomass = z_5_6) |> filter(!is.na(biomass), biomass != 0) |>  mutate(z = paste0("z_5_6"))
+
+
+
+biomass_list[[7]] <- biomass_data_all |>  filter(biomass_level == "biomass_raw") |>
+  select(-z_1_2, -z_5_6)|>  rename(biomass = z_2_3_original) |> filter(!is.na(biomass), biomass != 0) |>  mutate(z = paste0("z_2_3_original"))
+
+biomass_list[[8]] <- biomass_data_all |>  filter(biomass_level == "biomass_mice") |>
+  select(-z_1_2, -z_5_6)|>  rename(biomass = z_2_3_original) |> filter(!is.na(biomass), biomass != 0) |>  mutate(z = paste0("z_2_3_original"))
+
+biomass_list[[9]] <- biomass_data_all |>  filter(biomass_level == "biomass_mice_lm") |>
+  select(-z_1_2, -z_5_6)|>  rename(biomass = z_2_3_original) |> filter(!is.na(biomass), biomass != 0) |>  mutate(z = paste0("z_2_3_original"))
+
+
+glmm_results <- list()
+glmm_dynamics <- list()
+library(glmmTMB)
+library(emmeans)
+
+
+for(i in seq_along(biomass_list)){
+ 
+  model <- glmmTMB(biomass ~ treatment * sampling + (1 | plot),
+          dispformula = ~ treatment + sampling, 
+          data = biomass_list[[i]],  family = Gamma(link = "log")) 
+  
+  em_treat_biomass <- emmeans(model, ~ treatment, type = "response")
+  
+  glmm_results[[i]] <- as.data.frame(pairs(em_treat_biomass, adjust = "tukey")) |>
+    mutate(biomass_level = paste0(unique(biomass_list[[i]]$biomass_level)),
+           z_value = paste0(unique(biomass_list[[i]]$z)),
+           estimate_type = "ratio") |> 
+    rename(estimate = ratio)|> 
+    select(-null)
+  
+  
+}
+
+
+glmm_treatment <- do.call(rbind, glmm_results) |> 
+  common_function() |> 
+ # mutate(model = paste0("GLMM")) |>  
+  select(-contrast) |> 
+  rename(glmm_estimate = estimate, 
+         glmm_SE = SE, 
+         glmm_p_value = p_value, 
+         glmm_estimatetype = estimate_type, 
+         glmm_effect_sign = effect_sign,
+         glmm_effect_significance = effect_significance) |> 
+  select(-df, -z.ratio)
+
+
+
+######### LOG RESPONSE RATIO ###########################################################
 
 biomass_levels <- unique(biomass_data_all$biomass_level)
 z_levels <- colnames(biomass_data_all)[6:ncol(biomass_data_all)]
@@ -647,40 +761,39 @@ for (i in seq_along(biomass_levels)){
 }
 
 eff_size_agg <- do.call(rbind, list_eff)  %>% 
+  filter(eff_descriptor != "wp_vs_w") |> 
   mutate(
     eff_value = round(eff_value, 2),
     lower_limit = round(lower_limit, 2),
     upper_limit = round(upper_limit, 2)
   ) %>% 
   rename(z_value = variable) %>% 
-  select(eff_descriptor, biomass_level, z_value, eff_value, lower_limit, upper_limit, null_effect)
-
-
-
-
-
-data <- eff_size_agg %>% 
-  filter(eff_descriptor == "wp_vs_p") %>% 
+  select(eff_descriptor, biomass_level, z_value, eff_value, lower_limit, upper_limit, null_effect) |> 
+  mutate(model = paste0("LRR"),
+         biomass_level = as.factor(biomass_level)) |> 
   mutate(
-    eff_descriptor = as.factor(eff_descriptor),
-    biomass_level = factor(
-      biomass_level,
-      levels = c("biomass_raw", "biomass_mice", "biomass_mice_lm")
-    ),
-    z_value = factor(
-      z_value,
-      levels = c("z_1_6", "z_1_3", "z_1_2", "z_2_3_original", "z_5_6", "z_1", "z_7_6")
+    effect_sign = ifelse(eff_value > 0 , "positive", "negative"),
+    effect_significance = case_when(
+      null_effect == "YES" ~ "non-significant",
+      TRUE                 ~ "significant", 
     )
-  )
- 
+  ) 
 
-gg_sensitivity_z_wp <-    
-ggplot(data, aes(
+
+data <-  full_join(glmm_treatment,eff_size_agg ) |> 
+  mutate(eff_descriptor = as.factor(eff_descriptor)) |> 
+  mutate(biomass_level = factor(biomass_level, levels = c("biomass_raw", "biomass_mice", "biomass_mice_lm")))
+
+
+gg_sensitivity_z_wp <- 
+data |> 
+  filter(eff_descriptor == "wp_vs_p") |> 
+ggplot(aes(
   x = z_value,                 # centrado en 0 + pequeño desplazamiento
   y = eff_value,
   color = eff_descriptor
 )) +
-  facet_wrap( ~biomass_level, scales = "free_y", nrow = 3, ncol = 1,
+  facet_wrap( ~ biomass_level, scales = "free_y", nrow = 3, ncol = 1,
               strip.position = "left",
               labeller = as_labeller(c(
                 biomass_raw     = "No imputation",
@@ -698,12 +811,20 @@ ggplot(data, aes(
   
   geom_point(size = 6) +
   
-  geom_text(aes(
-    y = ifelse(eff_value < 0, lower_limit - 0.1, upper_limit + 0.1),
-    label = ifelse(null_effect == "NO", "*", NA_character_)
-  ),
-  show.legend = FALSE,
-  size = 10) +
+  geom_text(
+    aes(
+      y = ifelse(eff_value < 0, lower_limit, upper_limit),
+      label = case_when(
+        glmm_effect_significance == "significant"     ~ "*",
+        glmm_effect_significance == "marginal"        ~ "·",
+        glmm_effect_significance == "non-significant" ~ NA_character_
+      )
+    ),
+    
+    #vjust = 0.7,          # Ajuste vertical para centrar el '*' dentro de la figura
+    show.legend = FALSE,
+    size = 10
+  ) +
   
   scale_color_manual(values = palette_RR_wp, labels = labels_RR_wp2) +
   
@@ -729,27 +850,14 @@ ggplot(data, aes(
 
 
 
- 
-  data_c <- eff_size_agg %>% 
-    filter(eff_descriptor %in% c("p_vs_c", "w_vs_c")) %>% 
-    mutate(
-      eff_descriptor = as.factor(eff_descriptor),
-      eff_descriptor = factor(eff_descriptor, levels = c("p_vs_c","w_vs_c")),
-      biomass_level = factor(
-        biomass_level,
-        levels = c("biomass_raw", "biomass_mice", "biomass_mice_lm")
-      ),
-      z_value = factor(
-        z_value,
-        levels = c("z_1_6", "z_1_3", "z_1_2", "z_2_3_original", "z_5_6", "z_1", "z_7_6")
-      ), 
-    ) 
-  
+
   pos_d <- position_dodge(width = 0.5)
   
   
- gg_sensitivity_z_c <-   
-  ggplot(data_c, aes(
+  gg_sensitivity_z_c <- 
+   data |> 
+   filter(eff_descriptor %in% c("p_vs_c", "w_vs_c")) |> 
+  ggplot( aes(
     x = z_value,
     y = eff_value,
     color = eff_descriptor,
@@ -778,15 +886,20 @@ ggplot(data, aes(
       position = pos_d
     ) +
     
-    geom_text(
-      aes(
-        y = ifelse(eff_value < 0, lower_limit - 0.1, upper_limit + 0.1),
-        label = ifelse(null_effect == "NO", "*", NA_character_)
-      ),
-      position = pos_d,
-      show.legend = FALSE,
-      size = 10
-    ) +
+   geom_text(
+     aes(
+       y = ifelse(eff_value < 0, lower_limit, upper_limit),
+       label = case_when(
+         glmm_effect_significance == "significant"     ~ "*",
+         glmm_effect_significance == "marginal"        ~ "·",
+         glmm_effect_significance == "non-significant" ~ NA_character_
+       )
+     ),
+     
+     #vjust = 0.7,          # Ajuste vertical para centrar el '*' dentro de la figura
+     show.legend = FALSE,
+     size = 10
+   ) +
    
     
     scale_color_manual(values = palette_RR_CB, labels = labels_RR2) +
@@ -820,5 +933,12 @@ print(gg_sensitivity_z_wp)
 
 print(gg_sensitivity_z_c)
 
+
+
+
+ggsave("results/z_coeff_biomass_sensitivity_control.png", plot = gg_sensitivity_z_wp, dpi = 600)
+ggsave("results/z_coeff_biomass_sensitivity_control.svg", plot = gg_sensitivity_z_wp, dpi = 600)
+ggsave("results/z_coeff_biomass_sensitivity_wpp.png", plot = gg_sensitivity_z_c, dpi = 600)
+ggsave("results/z_coeff_biomass_sensitivity_wpp.svg", plot = gg_sensitivity_z_c, dpi = 600)
 
 
