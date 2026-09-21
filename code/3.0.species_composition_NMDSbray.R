@@ -245,10 +245,20 @@ ggnmds_alltreatments <-
     
     geom_point(size = 2, show.legend = T) +
     
-    geom_text_repel(aes(label = sampling),
-                    max.overlaps = 8,
-                    size = 4.5,
-                    show.legend = F) +
+   # geom_text_repel(
+   #   aes(label = sampling),
+   #   max.overlaps = 8,
+   #   size = 4.5,
+   #   show.legend = F) +
+  
+  geom_text_repel(
+    aes(label = case_when(
+      sampling %in% c("0", "2", "10", "15", "20") ~ sampling, 
+      TRUE ~ NA_real_
+    )),
+    max.overlaps = 8,
+    size = 4.5,
+    show.legend = F) +
   
     geom_hline(yintercept = 0, color = "gray52", linetype = "dashed") +
     
@@ -280,12 +290,13 @@ ggnmds_alltreatments <-
          x = "NMDS1", y = "NMDS2", color = " ") +
     theme1
 
-print(ggnmds_alltreatments) # Supplementary Fig. 1
+print(ggnmds_alltreatments) 
 
 }
 
 
-
+ggsave("results/Figure_2_species_composition.png", plot = ggnmds_alltreatments, dpi = 600)
+ggsave("results/Figure_2_species_composition.svg", plot = ggnmds_alltreatments, dpi = 600)
 
 
 
