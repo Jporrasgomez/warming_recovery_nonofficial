@@ -50,6 +50,9 @@ variables <- c("richness",                         # 1
 
 library(metafor)
 
+
+### TREATMENTS W, P AND WP with C as reference
+
 for(i in seq_along(variables)){
 
 plot_level <- arkaute_no0 %>% 
@@ -100,5 +103,53 @@ rr_es_df <- as.data.frame(rr_es)
 
 }
  
+
+
+#### TREATMENT WP with P as reference
+
+for(i in seq_along(variables)){
+  
+  plot_level <- arkaute_no0 %>% 
+    filter(!is.na(.data[[paste0(variables[i])]])) %>% 
+    group_by(plot, treatment) %>% 
+    summarise(plot_mean = mean(.data[[paste0(variables[i])]]), .groups = "drop")
+  
+  data <- plot_level %>% 
+    group_by(treatment) %>% 
+    summarise(
+      mean_variable = mean(plot_mean),
+      sd_variable = sd(plot_mean),
+      n = n(),
+      .groups = "drop"
+    )
+  
+  # Comparación específica: WP vs P (P como referencia)
+  rr_data <- data %>%
+    filter(treatment == "wp") %>%
+    mutate(
+      mean_c = data$mean_variable[data$treatment == "p"],
+      sd_c   = data$sd_variable[data$treatment == "p"],
+      n_c    = data$n[data$treatment == "p"]
+    ) %>%
+    rename(mean_t = mean_variable, sd_t = sd_variable, n_t = n)
+  
+  # Cálculo del Log Response Ratio (ROM)
+  rr_es <- escalc(measure = "ROM",
+                  m1i = mean_t, sd1i = sd_t, n1i = n_t,
+                  m2i = mean_c, sd2i = sd_c, n2i = n_c,
+                  data = rr_data)
+  
+  rr_analysis <- rma(yi = yi, vi = vi, data = rr_es)
+  
+  rr_es_df <- as.data.frame(rr_es)
+  
+  # Representación gráfica
+  forest(x = rr_es_df$yi,
+         sei = sqrt(rr_es_df$vi),
+         slab = paste0(rr_es_df$treatment, " vs P"),
+         xlab = paste0("Effect size (ROM: WP vs P) - ", variables[i]))
+  
+}
+
 
 

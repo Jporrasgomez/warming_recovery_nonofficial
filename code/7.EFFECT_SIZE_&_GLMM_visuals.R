@@ -156,10 +156,12 @@ width_dynamics = 3 # size for plots (1:3) 1 for agg analysis, 3 for dynamics
   
   agg <- merge(agg, agg_glmm) |> 
     select(eff_descriptor, variable, eff_value, lower_limit, upper_limit,
-           null_effect, scale,  estimate, SE, p_value, AIC, estimate_type, effect_sign, 
+           null_effect, scale, contrast,  estimate, SE, z.ratio,  p_value, AIC, estimate_type, effect_sign, 
            effect_significance) |> 
-    rename(glmm_estimate = estimate, 
+    rename(glmm_contrast = contrast,
+           glmm_estimate = estimate, 
            glmm_SE = SE, 
+           glmm_z.ratio = z.ratio,
            glmm_p_value = p_value, 
            glmm_AIC = AIC, 
            glmm_estimatetype = estimate_type, 
@@ -194,15 +196,15 @@ width_dynamics = 3 # size for plots (1:3) 1 for agg analysis, 3 for dynamics
    
   dyn %>%   write.csv("results/effect_size_dynamics.csv")
   
-  # We need samplings 0 and 1, for which GLMM model were not fitted. 
-  dyn_01 <- dyn |> 
-    select(sampling, year, date, date_label_noyear,  eff_descriptor, variable, eff_value,
-           lower_limit, upper_limit, null_effect, scale) |> 
-    filter(sampling %in% c("0", "1")) |> 
-    mutate(
-      glmm_estimate = NA, glmm_SE = NA, glmm_p_value = NA, glmm_AIC = NA, glmm_estimate_type = NA,
-      glmm_effect_sign = NA, glmm_effect_significance = NA
-    )
+  ## We need samplings 0 and 1, for which GLMM model were not fitted. 
+  #dyn_01 <- dyn |> 
+  #  select(sampling, year, date, date_label_noyear,  eff_descriptor, variable, eff_value,
+  #         lower_limit, upper_limit, null_effect, scale) |> 
+  #  filter(sampling %in% c("0", "1")) |> 
+  #  mutate(
+  #    glmm_estimate = NA, glmm_SE = NA, glmm_p_value = NA, glmm_AIC = NA, glmm_estimate_type = NA,
+  #    glmm_effect_sign = NA, glmm_effect_significance = NA
+  #  )
     
   
   dyn_glmm  <-  read.csv("results/GLMM_dyn.csv") |> select(-X) |> 
@@ -214,10 +216,12 @@ width_dynamics = 3 # size for plots (1:3) 1 for agg analysis, 3 for dynamics
   
   dyn <- left_join(dyn, dyn_glmm) |> 
     select(sampling, year, date, date_label_noyear,  eff_descriptor, variable, eff_value,
-           lower_limit, upper_limit, null_effect, scale, estimate, SE, p_value, AIC, estimate_type,
+           lower_limit, upper_limit, null_effect, scale, contrast, estimate, SE, z.ratio, p_value, AIC, estimate_type,
            effect_sign, effect_significance) |> 
-    rename(glmm_estimate = estimate, 
+    rename(glmm_contrast = contrast,
+           glmm_estimate = estimate, 
            glmm_SE = SE, 
+           glmm_z.ratio = z.ratio,
            glmm_p_value = p_value, 
            glmm_AIC = AIC, 
            glmm_estimatetype = estimate_type, 
@@ -239,10 +243,12 @@ width_dynamics = 3 # size for plots (1:3) 1 for agg analysis, 3 for dynamics
         null_effect == "YES" & glmm_effect_significance == "non-significant"  ~ paste0("none")
       )
     ) |> 
-    bind_rows(dyn_01) # Integration of samplings 0 and 1
+    #bind_rows(dyn_01) |>  # Integration of samplings 0 and 1
+    filter(eff_descriptor != "wp_vs_w")
 
   
-  ## 2. GENERATING PLOTS ####
+  
+    ## 2. GENERATING PLOTS ####
   
   
   limits_main_variables <- c("richness",                    # 1     
@@ -427,6 +433,8 @@ width_dynamics = 3 # size for plots (1:3) 1 for agg analysis, 3 for dynamics
 print(gg_control)
 print(gg_wp) 
 
+agg |> write.csv("results/glmm_lrr_results_agg.csv")
+dyn |> write.csv("results/glmm_lrr_results_dyn.csv")
 
 
 ggsave("results/Figure_2.png", plot = gg_control, dpi = 600)

@@ -76,6 +76,7 @@ source("code/palettes_labels.R")
         ))
   }
   
+  
   lrr_reading <- function(data) {
     data |> 
       select(-scale, -X) |> 
@@ -94,7 +95,34 @@ source("code/palettes_labels.R")
           TRUE                 ~ "significant", 
         )
       ) |> 
-      select(-upper_limit, -lower_limit, -null_effect)
+      select(-null_effect)
+  }
+  
+  
+  extract_glmm_summary <- function(model, var_name) {
+    vc <- VarCorr(model)
+    sd_plot <- attr(vc$cond$plot, "stddev")["(Intercept)"]
+
+    disp_val <- suppressWarnings(sigma(model))
+    if (is.na(disp_val)) {
+      disp_val <- mean(predict(model, type = "disp"))
+    }
+    
+    glmm_summary_result <<- 
+      as.data.frame(car::Anova(model, type = "III")) |> 
+      tibble::rownames_to_column(var = "Effect") |> 
+      mutate(
+        SD_re_plot           = as.numeric(sd_plot),
+        Var_re_plot          = as.numeric(sd_plot^2),
+        dispersion_parameter = disp_val,
+        AIC                  = AIC(model),
+        Family               = family(model)$family,
+        Link                 = family(model)$link,
+        Variable             = var_name
+      )
+    
+    return(glmm_summary_result)
+    
   }
   
   ## Opening LOG RESPONSE RATIO results datasets
@@ -175,9 +203,34 @@ source("code/palettes_labels.R")
   
   
   
-  ###################################
+  ################################### GLMM RESULTS ########################################
   
-  #### Joining GLMM results ####
+  
+  
+  ### Joining GLMM summary results #############
+  
+  
+  
+  glmm_list <- list(glmm_richness, glmm_abundance, glmm_evenness, glmm_sla,
+                    glmm_LDMC, glmm_leafN, glmm_biomass, glmm_biomass_mice, glmm_biomass_raw)
+  variables <- c("richness", "abundance", "Y_zipf", "SLA", "LDMC", "leafN", "biomass_mice_lm", 
+                 "biomass_mice", "biomass_raw")
+  result_list <- list()
+  
+  
+
+  
+  for(i in seq_along(glmm_list)){
+    extract_glmm_summary(glmm_list[[i]], variables[i])
+    result_list[[i]] <- glmm_summary_result
+  }
+  
+  glmm_summary_result <- do.call(rbind, result_list)
+  
+  glmm_summary_result |> write.csv("results/GLMM_summary_results.csv")
+  
+  
+  #### Joining GLMM post hoc comparison results ####
   
   glmm_em_treat_list <- list(em_treat_richness, em_treat_abundance, em_treat_evenness, em_treat_sla, 
                              em_treat_ldmc, em_treat_leafN, em_treat_biomass, em_treat_biomass_mice, em_treat_biomass_raw)
@@ -236,15 +289,11 @@ source("code/palettes_labels.R")
   
   glmm_treatment <- do.call(rbind, glmm_results[[1]]) |> 
     common_function() |> 
-    mutate(model = paste0("GLMM")) |>  
-    select(-contrast)
-  
+    mutate(model = paste0("GLMM"))
   
   glmm_dynamics <- do.call(rbind, glmm_results[[2]]) |> 
     common_function() |> 
-    mutate(model = paste0("GLMM")) |>  
-    select(-contrast)
-  
+    mutate(model = paste0("GLMM")) 
   
   
   
@@ -256,7 +305,7 @@ source("code/palettes_labels.R")
   
   model_agg <- full_join(glmm_treatment,lrr_table ) |> 
     mutate(variable.bis = variable) |> 
-    select(variable, eff_descriptor, model, AIC, p_value, effect_significance, estimate,
+    select(variable, eff_descriptor, upper_limit, lower_limit, model, estimate, z.ratio, p_value, effect_significance,
            effect_sign, variable.bis)
   
   
@@ -267,7 +316,7 @@ source("code/palettes_labels.R")
       sampling = fct_reorder(sampling, as.numeric(sampling))
     ) |>
     select(
-      variable, sampling, eff_descriptor, model,p_value, effect_significance, estimate,
+      variable, eff_descriptor, sampling, eff_descriptor, upper_limit, lower_limit, model, estimate, z.ratio, p_value, effect_significance,
       effect_sign, variable.bis, variable_model)
   
   
