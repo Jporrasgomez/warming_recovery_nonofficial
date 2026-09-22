@@ -607,9 +607,16 @@ biomass_original <- rbind(biomass_original_raw, biomass_original_mice) %>%
   rbind(biomass_original_mice_lm)
 
 
+# Including mean_vwc
+mean_vwc_data <- read.csv("data/processed_data/arkaute.csv") |> 
+  filter(!sampling %in% c("0", "1")) |> 
+  select(treatment, sampling, plot, mean_vwc) |> 
+  mutate(plot = as.factor(plot), treatment = as.factor(treatment), sampling = as.factor(sampling))
 
 
-biomass_data_all <- merge(biomass_sensitivity, biomass_original) %>% 
+biomass_data_all <- merge(biomass_sensitivity, biomass_original) |> 
+  mutate(plot = as.factor(plot), treatment = as.factor(treatment), sampling = as.factor(sampling)) |> 
+  right_join(mean_vwc_data) |> 
   mutate(treatment = as.factor(treatment))
 biomass_data_all |>  write.csv("data/processed_data/biomass_data_Z.csv")
 
@@ -696,8 +703,12 @@ library(glmmTMB)
 library(emmeans)
 
 
+
+# Mean vwc will be used for all z coeff in biomass FINAL and for z_2_3 in just MICE 
+
 for(i in seq_along(biomass_list)){
  
+  if(i %in% c(1, 2, 4, 5, 7)){ # Model without mean_vwc inclusion as continous covariate for biomass raw (all z coeff) and biomass mice for z = 1/2 and z = 5/6
   model <- glmmTMB(biomass ~ treatment * sampling + (1 | plot),
           dispformula = ~ treatment + sampling, 
           data = biomass_list[[i]],  family = Gamma(link = "log")) 
@@ -710,7 +721,22 @@ for(i in seq_along(biomass_list)){
            estimate_type = "ratio") |> 
     rename(estimate = ratio)|> 
     select(-null)
-  
+  } else {
+    
+    model <- glmmTMB(biomass ~ treatment * sampling + mean_vwc + (1 | plot), # Inclusion of mean_vwc for biomass mice and biomas mice LM
+                     dispformula = ~ treatment + sampling, 
+                     data = biomass_list[[i]],  family = Gamma(link = "log")) 
+    
+    em_treat_biomass <- emmeans(model, ~ treatment, type = "response")
+    
+    glmm_results[[i]] <- as.data.frame(pairs(em_treat_biomass, adjust = "tukey")) |>
+      mutate(biomass_level = paste0(unique(biomass_list[[i]]$biomass_level)),
+             z_value = paste0(unique(biomass_list[[i]]$z)),
+             estimate_type = "ratio") |> 
+      rename(estimate = ratio)|> 
+      select(-null)
+    
+  }
   
 }
 
@@ -732,7 +758,7 @@ glmm_treatment <- do.call(rbind, glmm_results) |>
 ######### LOG RESPONSE RATIO ###########################################################
 
 biomass_levels <- unique(biomass_data_all$biomass_level)
-z_levels <- colnames(biomass_data_all)[6:ncol(biomass_data_all)]
+z_levels <- c("z_1_2", "z_5_6", "z_2_3_original")
 
 biomass_no0 <- biomass_data_all %>% 
   filter(sampling != "0")

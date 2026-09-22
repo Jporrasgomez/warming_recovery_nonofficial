@@ -177,7 +177,7 @@ source("code/palettes_labels.R")
   em_time_leafN <- emmeans(glmm_leafN, ~ treatment | sampling, type = "response")
   
   ### BIOMASS ###
-  glmm_biomass <- glmmTMB(biomass_mice_lm ~ treatment * sampling + (1 | plot),
+  glmm_biomass <- glmmTMB(biomass_mice_lm ~ treatment * sampling + mean_vwc + (1 | plot),
                           dispformula = ~treatment + sampling, 
                           data = arkaute_biomass, family = Gamma(link = "log"))
   em_treat_biomass <- emmeans(glmm_biomass, ~ treatment, type = "response")
@@ -186,7 +186,7 @@ source("code/palettes_labels.R")
   
   ## BIOMASS - just MICE ####
   
-  glmm_biomass_mice <- glmmTMB(biomass_mice ~ treatment * sampling + (1 | plot),
+  glmm_biomass_mice <- glmmTMB(biomass_mice ~ treatment * sampling + mean_vwc +  (1 | plot),
                                 dispformula = ~treatment + sampling, 
                                 data = arkaute_biomass_mice,  family = Gamma(link = "log"))
   em_treat_biomass_mice <- emmeans(glmm_biomass_mice, ~ treatment, type = "response")
@@ -227,7 +227,7 @@ source("code/palettes_labels.R")
   
   glmm_summary_result <- do.call(rbind, result_list)
   
-  glmm_summary_result |> write.csv("results/GLMM_summary_results.csv")
+ 
   
   
   #### Joining GLMM post hoc comparison results ####
@@ -276,12 +276,12 @@ source("code/palettes_labels.R")
     
     
     glmm_results[[i]][[8]]  <- as.data.frame(pairs(glmm_em_list[[i]][[8]], adjust = "tukey")) |> 
-      mutate(variable = paste0("biomass_mice"), AIC = AIC(glmm_leafN), estimate_type = "ratio") |> 
+      mutate(variable = paste0("biomass_mice"), AIC = AIC(glmm_biomass_mice), estimate_type = "ratio") |> 
       rename(estimate = ratio)|> 
       select(-null)
     
     glmm_results[[i]][[9]]  <- as.data.frame(pairs(glmm_em_list[[i]][[9]], adjust = "tukey")) |> 
-      mutate(variable = paste0("biomass_raw"), AIC = AIC(glmm_leafN), estimate_type = "ratio") |> 
+      mutate(variable = paste0("biomass_raw"), AIC = AIC(glmm_biomass_raw), estimate_type = "ratio") |> 
       rename(estimate = ratio)|> 
       select(-null)
     
@@ -325,6 +325,8 @@ source("code/palettes_labels.R")
   
   glmm_treatment |>  write.csv("results/GLMM_agg.csv")
   glmm_dynamics  |>  write.csv("results/GLMM_dyn.csv")
+  
+  glmm_summary_result |> write.csv("results/GLMM_summary_results.csv")
   
 }
 

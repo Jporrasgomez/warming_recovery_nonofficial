@@ -28,11 +28,30 @@ arkaute_no0 <- arkaute %>%
   filter(sampling != "0")
 
 
-## Geary test to test suitability of data for LRR analysis
-## We use a modification of Geary Test proposed by Lajeunesse 2015
+# Charging functions
+source("code/functions/eff_size_LRR_function_delta.R")      # Function of LRR at aggregated level CORRECTED
+source("code/functions/new_dynamics.R")               # Function of LRR at dynamics level
+source("code/functions/gg_aggregated_function_2.R")   # Function for visualization of aggregated analysis
+source("code/functions/gg_dynamics_function2.R")      # Function for visualization of dynamics analysis
 
-# 1. Geary test at Treatment level 
 
+k = 3  
+# k = 1: To see all (but biomass raw and biomass LM)
+# k = 2: biomass variables for sensitivity analysis
+# k = 3: Richness, abundance and biomass for warming effects on recovery()
+# K = 4: Evenness and functional traits for wp vs p
+
+width_dynamics = 3 # size for plots (1:3) 1 for agg analysis, 3 for dynamics
+
+
+{
+  
+  
+  
+  ## Geary test to test suitability of data for LRR analysis
+  ## We use a modification of Geary Test proposed by Lajeunesse 2015
+  
+  # 1. Geary test at Treatment level 
 geary_test_treatment0 <- arkaute_no0 %>%
   pivot_longer(
     cols = c(-date, -year, - date_label, -date_label_noyear, -sampling, -plot, -treatment,
@@ -91,8 +110,7 @@ false_cases_sampling <- false_sampling %>%
     .groups = "drop"
   )
 
-#View(geary_test_treatment)
-#View(false_cases_sampling)
+
 
 
 #  Log Response Ratio
@@ -106,22 +124,7 @@ variables <-
      colnames()
   ) 
 
-# Charging functions
-source("code/functions/eff_size_LRR_function_delta.R")      # Function of LRR at aggregated level CORRECTED
-source("code/functions/new_dynamics.R")               # Function of LRR at dynamics level
-source("code/functions/gg_aggregated_function_2.R")   # Function for visualization of aggregated analysis
-source("code/functions/gg_dynamics_function2.R")      # Function for visualization of dynamics analysis
 
-
-k = 1   
-# k = 1: To see all (but biomass raw and biomass LM)
-# k = 2: biomass variables for sensitivity analysis
-# k = 3: Richness, abundance and biomass for warming effects on recovery()
-# K = 4: Evenness and functional traits for wp vs p
-
-width_dynamics = 3 # size for plots (1:3) 1 for agg analysis, 3 for dynamics
-
-{
   
   # 1. Log Response Analysis: 
   
@@ -429,6 +432,8 @@ width_dynamics = 3 # size for plots (1:3) 1 for agg analysis, 3 for dynamics
   
 }
 
+#View(geary_test_treatment)
+#View(false_case_samplings)
 
 print(gg_control)
 print(gg_wp) 
@@ -450,6 +455,12 @@ ggsave("results/Supplementary_figure_biomass_c.png", plot = gg_control, dpi = 60
 ggsave("results/Supplementary_figure_biomass_c.svg", plot = gg_control, dpi = 600)
 ggsave("results/Supplementary_figure_biomass_wp.png", plot = gg_wp, dpi = 600)
 ggsave("results/Supplementary_figure_biomass_wp.svg", plot = gg_wp, dpi = 600)
+
+agg |> filter(variable %in% c("biomass_mice_lm", "biomass_mice", "biomass_raw")) |> 
+  write.csv("results/glmm_lrr_results_agg_BIOMASS_sens.csv")
+dyn |> filter(variable %in% c("biomass_mice_lm", "biomass_mice", "biomass_raw")) |> 
+  write.csv("results/glmm_lrr_results_dyn_BIOMASS_sens.csv")
+
 
 
 # Other variables WP vs P

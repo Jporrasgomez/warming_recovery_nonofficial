@@ -101,34 +101,53 @@ ar_test <- function(model, data){
 
 ####################### CHOOSING GLMM's ########################
 
-### Richness ####
+### Richness ########################
 
 m0_richness <- glmmTMB( richness ~ treatment * sampling + (1 | plot),
                         data = arkaute_richness,family = genpois())
-AIC(m0_richness)
+AIC(m0_richness) #BEST
 diagnose_glmm(m0_richness)
 ar_test(m0_richness, arkaute_richness)# If p-value is higher than 0.05 we do not need autocorrelation term
+
+m1_richness <- glmmTMB( richness ~ treatment * sampling + (1 | plot),
+                        data = arkaute_richness,family = genpois())
+AIC(m1_richness) # Same AIC when dispformula is added. No need. 
+
+m2_richness <- glmmTMB( richness ~ treatment * sampling + mean_vwc +  (1 | plot),
+                        dispformula = ~treatment,
+                        data = arkaute_richness,family = genpois())
+
+AIC(m2_richness) # Inclusion of mean volumetric water content reduces the validity of the model
+
 
 as.data.frame(pairs(emmeans(m0_richness, ~ treatment, type = "response"), adjust = "tukey"))
 
 
 
 
-### Abundance ###
+### Abundance ##################################
 
 hist(arkaute_abundance$abundance)
 
 m0_abundance <- glmmTMB(abundance ~ treatment * sampling + (1 | plot),
                         data = arkaute_abundance, family = gaussian())
-
 AIC(m0_abundance)
 diagnose_glmm(m0_abundance)
 ar_test(m0_abundance, arkaute_abundance)
 as.data.frame(pairs(emmeans(m0_abundance, ~ treatment, type = "response"), adjust = "tukey"))
 
 
+m1_abundance <- glmmTMB(abundance ~ treatment * sampling + (1 | plot),
+                        dispformula = ~ treatment, 
+                        data = arkaute_abundance, family = gaussian())
+AIC(m1_abundance) # AIC increases when dispformula is added. 
 
-#### Evenness ###
+
+m2_abundance <- glmmTMB(abundance ~ treatment * sampling + mean_vwc +  (1 | plot),
+                        data = arkaute_abundance, family = gaussian())
+AIC(m2_abundance) # There are convergence problems when mean_vwc is included
+
+#### Evenness ###############################
 
 hist(arkaute_evenness$Y_zipf)
 quantile(arkaute_evenness$Y_zipf)
@@ -147,9 +166,14 @@ diagnose_glmm(m1_evenness) # Best
 ar_test(m1_evenness, arkaute_evenness)
 as.data.frame(pairs(emmeans(m1_evenness, ~ treatment, type = "response"), adjust = "tukey"))
 
+m2_evenness <- glmmTMB(Y_zipf ~ treatment * sampling + mean_vwc + (1 | plot),
+                       dispformula = ~treatment + sampling, 
+                       data = arkaute_evenness, family = gaussian())
+
+AIC(m2_evenness) # No change in AIC (slight increase). 
 
 
-### SLA ###
+### SLA ########################################################################
 
 hist(arkaute_sla$SLA, breaks = 50)
 
@@ -168,8 +192,13 @@ ar_test(m0_sla, arkaute_sla)
 as.data.frame(pairs(emmeans(m0_sla, ~ treatment, type = "response"), adjust = "tukey"))
 
 
+m2_sla <- glmmTMB(SLA ~ treatment * sampling + mean_vwc +  (1 | plot), 
+                  dispformula = ~ treatment, 
+                  data = arkaute_sla, family = gaussian())
+AIC(m2_sla) # AIC increases when mean_vwc is included
 
-### LDMC ###
+
+### LDMC ######################################################################
 
 hist(arkaute_ldmc$LDMC)
 quantile(arkaute_ldmc$LDMC)
@@ -191,8 +220,13 @@ ar_test(m1_ldmc, arkaute_ldmc)
 as.data.frame(pairs(emmeans(m1_ldmc, ~ treatment, type = "response"), adjust = "tukey"))
 
 
+m2_ldmc <- glmmTMB(LDMC ~ treatment * sampling + mean_vwc +  (1 | plot), 
+                   dispformula = ~ treatment, 
+                   data = arkaute_ldmc, family = gaussian())
 
-### Leaf N ###
+AIC(m2_ldmc) # # AIC increases when mean_vwc is included
+
+### Leaf N ############################################################
 
 hist(arkaute_leafN$leafN)
 quantile(arkaute_leafN$leafN)
@@ -208,15 +242,19 @@ ar_test(m0_leafN, arkaute_leafN)
 m1_leafN <- glmmTMB(leafN ~ treatment * sampling + (1 | plot),
                     dispformula = ~ treatment,
                     data = arkaute_leafN, family = gaussian())
-AIC(m1_leafN)
+AIC(m1_leafN) # BEST
 diagnose_glmm(m1_leafN)
 ar_test(m1_leafN, arkaute_leafN)
 as.data.frame(pairs(emmeans(m1_leafN, ~ treatment, type = "response"), adjust = "tukey"))
 
+m2_leafN <- glmmTMB(leafN ~ treatment * sampling + mean_vwc + (1 | plot),
+                    dispformula = ~ treatment,
+                    data = arkaute_leafN, family = gaussian())
+AIC(m2_leafN) #AIC increases when dispformula is added
 
 
+### Biomass ################################################################
 
-### Biomass ###
 hist(arkaute_biomass$biomass_mice_lm)
 
 m0_biomass <- glmmTMB(biomass_mice_lm ~ treatment * sampling + (1 | plot),
@@ -232,12 +270,19 @@ AIC(m1_biomass)
 diagnose_glmm(m1_biomass)
 ar_test(m1_biomass, arkaute_biomass)
 
-as.data.frame(pairs(emmeans(m1_biomass, ~ treatment, type = "response"), adjust = "tukey"))
 
 
+m2_biomass <- glmmTMB(biomass_mice_lm ~ treatment * sampling + mean_vwc + (1 | plot),
+                      dispformula = ~treatment + sampling, 
+                      data = arkaute_biomass, family = Gamma(link = "log"))
+AIC(m2_biomass) # Great reduction of AIC when mean_vwc is included. BEST 
+diagnose_glmm(m2_biomass)
+ar_test(m2_biomass, arkaute_biomass)
+as.data.frame(pairs(emmeans(m2_biomass, ~ treatment, type = "response"), adjust = "tukey"))
+as.data.frame(pairs(emmeans(m2_biomass, ~ treatment | sampling, type = "response"), adjust = "tukey"))
 
 
-# Biomass with mice imputation only #
+# Biomass with mice imputation only ##############################################
 
 hist(arkaute_biomass_mice$biomass_mice)
 
@@ -250,14 +295,24 @@ ar_test(m0_biomass_mice, arkaute_biomass_mice)
 m1_biomass_mice <- glmmTMB(biomass_mice ~ treatment * sampling + (1 | plot),
                            dispformula = ~treatment + sampling, 
                            data = arkaute_biomass_mice,  family = Gamma(link = "log"))
-AIC(m1_biomass_mice) #BEST
+AIC(m1_biomass_mice) 
 diagnose_glmm(m1_biomass_mice)
 ar_test(m1_biomass_mice, arkaute_biomass_mice)
+
+
+
+m2_biomass_mice <- glmmTMB(biomass_mice ~ treatment * sampling + mean_vwc +  (1 | plot),
+                           dispformula = ~treatment + sampling, 
+                           data = arkaute_biomass_mice,  family = Gamma(link = "log"))
+AIC(m2_biomass_mice) #BEST
+diagnose_glmm(m2_biomass_mice)
+ar_test(m2_biomass_mice, arkaute_biomass_mice)
 
 as.data.frame(pairs(emmeans(m1_biomass_mice, ~ treatment, type = "response"), adjust = "tukey"))
 
 
-# Biomass raw #
+# Biomass raw ###################################################################################
+
 hist(arkaute_biomass_raw$biomass_raw)
 min(arkaute_biomass_raw$biomass_raw)
 
@@ -270,10 +325,16 @@ ar_test(m0_biomass_raw, arkaute_biomass_raw)
 m1_biomass_raw <- glmmTMB(biomass_raw ~ treatment * sampling + (1 | plot),
                            dispformula = ~treatment + sampling, 
                            data = arkaute_biomass_raw,  family = Gamma(link = "log"))
-AIC(m1_biomass_raw) #BEST
+AIC(m1_biomass_raw) # BEST
 diagnose_glmm(m1_biomass_raw)
 ar_test(m1_biomass_raw, arkaute_biomass_raw)
 
-as.data.frame(pairs(emmeans(m1_biomass_raw, ~ treatment, type = "response"), adjust = "tukey"))
 
+
+m2_biomass_raw <- glmmTMB(biomass_raw ~ treatment * sampling + mean_vwc + (1 | plot),
+                          dispformula = ~treatment + sampling, 
+                          data = arkaute_biomass_raw,  family = Gamma(link = "log"))
+AIC(m2_biomass_raw) # There is only 1 AIC reduction. Not enough to suppor inclusion of mean_vwc.
+ar_test(m2_biomass_raw, arkaute_biomass_raw)
+as.data.frame(pairs(emmeans(m2_biomass_raw, ~ treatment, type = "response"), adjust = "tukey"))
 

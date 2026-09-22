@@ -117,20 +117,54 @@ glmm_biomass_str <- function(dataset) {
                    data = dataset,  family = Gamma(link = "log"))
   diagnose_glmm(model)
   ar_test(model, dataset)
+  AIC(model)
+}
+
+glmm_biomass_str_vwc <- function(dataset) {
+  model <- glmmTMB(biomass ~ treatment * sampling + mean_vwc + (1 | plot),
+                   dispformula = ~ treatment + sampling, 
+                   data = dataset,  family = Gamma(link = "log"))
+  diagnose_glmm(model)
+  ar_test(model, dataset)
+  AIC(model)
 }
 
 
-glmm_biomass_str(raw_z_2_3) # Good fit, no need of ar1 term
+glmm_biomass_str(raw_z_2_3) # Good fit, no need of ar1 term. BEST
+glmm_biomass_str_vwc(raw_z_2_3) # No need of including mean_vwc (AIC increases < 2)
+
 glmm_biomass_str(mice_z_2_3) # Good fit, no need of ar1 term
+glmm_biomass_str_vwc(mice_z_2_3) # BEST
+
 glmm_biomass_str(final_z_2_3) # Good fit, no need of ar1 term
+glmm_biomass_str_vwc(final_z_2_3) # BEST (we already knew this)
+
+
 
 glmm_biomass_str(raw_z_5_6) # Good fit, no need of ar1 term
-glmm_biomass_str(mice_z_5_6) # Good fit, no need of ar1 term
+glmm_biomass_str_vwc(raw_z_5_6) # No need of including mean_vwc (AIC increases < 2)
+
+glmm_biomass_str(mice_z_5_6) # Good fit, no need of ar1 term. BEST
+glmm_biomass_str_vwc(mice_z_5_6) # No need of including mean_vwc (AIC increases < 2)
+
 glmm_biomass_str(final_z_5_6) # Good fit, no need of ar1 term
+glmm_biomass_str_vwc(final_z_5_6) # BEST
+
+
 
 glmm_biomass_str(raw_z_1_2) # Good fit, no need of ar1 term
-glmm_biomass_str(mice_z_1_2) # Good fit, no need of ar1 term
+glmm_biomass_str_vwc(raw_z_1_2) # # No need of including mean_vwc (AIC increases < 2)
+
+glmm_biomass_str(mice_z_1_2) # Good fit, no need of ar1 term. BEST
+glmm_biomass_str_vwc(mice_z_1_2) # Dispersion problem. 
+
+
 glmm_biomass_str(final_z_1_2) # Could improve fit, but will accept it. No need of ar1 term
+glmm_biomass_str_vwc(final_z_1_2) # BEST
+
+# Conclusion: 
+
+# Mean vwc will be used for FINAL and for z_2_3 in just MICE 
 
 
 
