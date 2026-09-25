@@ -77,26 +77,6 @@ source("code/palettes_labels.R")
   }
   
   
-  lrr_reading <- function(data) {
-    data |> 
-      select(-scale, -X) |> 
-      rename(estimate = eff_value) |> 
-      mutate(model = paste0("LRR"),
-             variable = as.factor(variable)) |> 
-      mutate(
-        variable = fct_recode(variable,
-                              "evenness" = "Y_zipf",
-                              "biomass"  = "biomass_mice_lm"
-        ),
-        variable = droplevels(variable),
-        effect_sign = ifelse(estimate > 0 , "positive", "negative"),
-        effect_significance = case_when(
-          null_effect == "YES" ~ "non-significant",
-          TRUE                 ~ "significant", 
-        )
-      ) |> 
-      select(-null_effect)
-  }
   
   
   extract_glmm_summary <- function(model, var_name) {
@@ -124,15 +104,7 @@ source("code/palettes_labels.R")
     return(glmm_summary_result)
     
   }
-  
-  ## Opening LOG RESPONSE RATIO results datasets
-  lrr_table <- read.csv("results/effect_size_aggregated.csv") |> 
-    lrr_reading()
-  lrr_table_dyn <- read.csv("results/effect_size_dynamics.csv") |> 
-    filter(sampling != "0") |> 
-    mutate(sampling = as.factor(sampling)) |> 
-    lrr_reading()
-  
+
   
   ############# GLMM MODELS ##############################################################
   ## Richness ## 
@@ -296,32 +268,6 @@ source("code/palettes_labels.R")
     mutate(model = paste0("GLMM")) 
   
   
-  
-  
-  
-  
-  ####### Joining GLMM, GAM and LRR ############
-  
-  
-  model_agg <- full_join(glmm_treatment,lrr_table ) |> 
-    mutate(variable.bis = variable) |> 
-    select(variable, eff_descriptor, upper_limit, lower_limit, model, estimate, z.ratio, p_value, effect_significance,
-           effect_sign, variable.bis)
-  
-  
-  models_dynamics <- full_join(glmm_dynamics, lrr_table_dyn) |>
-    mutate(
-      variable.bis = variable,
-      variable_model = paste0(variable, "-", model),
-      sampling = fct_reorder(sampling, as.numeric(sampling))
-    ) |>
-    select(
-      variable, eff_descriptor, sampling, eff_descriptor, upper_limit, lower_limit, model, estimate, z.ratio, p_value, effect_significance,
-      effect_sign, variable.bis, variable_model)
-  
-  
-  model_agg |> write.csv("results/agg_glmm_LRR_comparison.csv")
-  models_dynamics |> write.csv("results/dyn_glmm_LRR_comparison.csv")
   
   glmm_treatment |>  write.csv("results/GLMM_agg.csv")
   glmm_dynamics  |>  write.csv("results/GLMM_dyn.csv")

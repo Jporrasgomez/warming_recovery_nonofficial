@@ -63,9 +63,6 @@ LRR_dynamics <- function(data, variable){
   
   
   
-  # n = 4
-  
-  
   ############ LRR = treatment / Control ##########
   
   RR_treat_vs_c <- effect %>% 

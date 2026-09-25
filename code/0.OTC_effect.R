@@ -582,13 +582,12 @@ gg_vwc_vs_t <-
 
 
 # Statistics on VWC
-  hist(data$vwc)
-  anova_result <- aov(vwc ~ OTC_label, data)
-  summary(anova_result)
-  TukeyHSD(anova_result)
 
-
-
+  hist(vwc_data$vwc_mean)
+  anova_result_mean <- aov(vwc_mean ~ OTC_label, vwc_data)
+  summary(anova_result_mean)
+  TukeyHSD(anova_result_mean)
+  
 
 
 

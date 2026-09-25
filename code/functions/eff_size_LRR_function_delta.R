@@ -4,9 +4,8 @@ LRR_agg <- function(data, variable){
   
   
   
-  # Step 1: Average by plot first for 2024 (resolves repeated measures)
+  # Step 1: Average by plot first 
   plot_level <- data %>% 
-    #filter(year == "2024") |> 
     filter(!is.na(.data[[variable]])) %>% 
     group_by(plot, treatment) %>% 
     summarise(plot_mean = mean(.data[[variable]]), .groups = "drop")
@@ -39,7 +38,6 @@ LRR_agg <- function(data, variable){
     rename(mean_p = mean,
            sd_p = sd,
            n_p = n) %>% 
-    #mutate(eff_descriptor = "wp_vs_p") %>% 
     select(-treatment)
   
   
@@ -50,7 +48,6 @@ LRR_agg <- function(data, variable){
     rename(mean_w = mean,
            sd_w = sd,
            n_w = n) %>% 
-    #mutate(eff_descriptor = "wp_vs_p") %>% 
     select(-treatment)
   
   effect_wp <- effect %>% 

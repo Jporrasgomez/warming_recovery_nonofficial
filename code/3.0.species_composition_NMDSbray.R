@@ -241,7 +241,7 @@ ggnmds_alltreatments <-
     
     
     stat_ellipse(geom = "polygon", aes(fill = treatment),
-                 alpha = 0.12, show.legend = FALSE, level = 0.68) + 
+                 alpha = 0.12, show.legend = FALSE, level = 0.95) + 
     
     geom_point(size = 2, show.legend = T) +
     
@@ -278,7 +278,8 @@ ggnmds_alltreatments <-
     #          colour = "black",
     #          alpha = 0.5) +
    
-    scale_color_manual(values = palette_CB, labels = labels, guide = "legend") +
+    scale_color_manual(values = palette_CB, labels = c("c" = "Control", "w" = "Warmed-only", 
+                                                       "p" = "Perturbed-only", "wp" = "Combined") , guide = "legend") +
     
     scale_fill_manual(values = palette_CB, guide = "none" ) +
     

@@ -3,7 +3,7 @@
 
 
 
-ggagg2 <- function(data, palette, labels, colorline, limitvar, labelvar, breaks_axix_y){
+ggagg2 <- function(data, palette, labels, colorline, breaks_axix_y){
   
  
   data <- data %>% 
@@ -13,7 +13,7 @@ ggagg2 <- function(data, palette, labels, colorline, limitvar, labelvar, breaks_
     )
   
   ggplot(data, aes(
-    x = eff_descriptor,                 # centrado en 0 + pequeño desplazamiento
+    x = eff_descriptor,               
     y = eff_value,
     color = eff_descriptor
   )) +
@@ -28,12 +28,6 @@ ggagg2 <- function(data, palette, labels, colorline, limitvar, labelvar, breaks_
     
     geom_point(size = 6) +
     
-    #geom_text(aes(
-    #  y = ifelse(eff_value < 0, lower_limit - scale, upper_limit + scale),
-    #  label = ifelse(null_effect == "NO", "*", NA_character_)
-    #),
-    #show.legend = FALSE,
-    #size = 10) +
     
     geom_text(
       aes(
@@ -44,19 +38,15 @@ ggagg2 <- function(data, palette, labels, colorline, limitvar, labelvar, breaks_
           glmm_effect_significance == "non-significant" ~ NA_character_
         )
       ),
-      
-      #vjust = 0.7,          # Ajuste vertical para centrar el '*' dentro de la figura
+
       show.legend = FALSE,
       size = 10
     ) +
     
     scale_color_manual(values = palette, labels = labels) +
     
-   # Chat gpt help
-    #scale_x_continuous(limits = c(-1.8 , 1.8 ), expand = expansion(mult = 0.1)) +
     
     scale_y_continuous( breaks = scales::pretty_breaks(n = breaks_axix_y), 
-                        # añade margen relativo por abajo y por arriba (5% y 25% como ejemplo)
                         expand = expansion(mult = c(0.05, 0.1)) ) +
     
     

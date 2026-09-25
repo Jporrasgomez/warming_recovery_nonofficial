@@ -11,19 +11,9 @@ pacman::p_load(
 source("code/palettes_labels.R")
 
 
+{
+  
 
-  
-  theme_set(
-    theme_bw() +
-      theme(
-        legend.position   = "right",
-        panel.grid        = element_blank(),
-        strip.background  = element_blank(),
-        strip.text        = element_text(face = "bold"),
-        text              = element_text(size = 11)
-      )
-  )
-  
   arkaute <- read.csv("data/processed_data/arkaute.csv") %>%
     mutate(
       year      = factor(year),
@@ -304,15 +294,17 @@ source("code/palettes_labels.R")
         labels = unname(labs_variable)
       )
     )
-    
+
   
-  
+  gg_s0 <- 
   ggplot(RESULT0, aes(
     x = eff_descriptor,                 # centrado en 0 + pequeño desplazamiento
     y = eff_value,
     color = eff_descriptor
   )) +
-    facet_grid(rows = vars(variable), scales = "free_y", switch = "y") +
+    #facet_grid(rows = vars(variable), scales = "free_y", switch = "y") +
+    facet_wrap(~ variable, scales = "free_y", strip.position = "top", nrow = 2) +
+
     
     geom_hline(yintercept = 0, linetype = "dashed",
                color = "grey50", linewidth = 0.5) +
@@ -338,14 +330,14 @@ source("code/palettes_labels.R")
       size = 10
     ) +
     
-    scale_color_manual(values = palette_RR_CB, labels = c("w_vs_c" = "Warming", "p_vs_c" = "Perturbation", "wp_vs_c" = "Combined")) +
-    scale_y_continuous( breaks = scales::pretty_breaks(n = 2), 
+    scale_color_manual(values = palette_RR_CB, labels = c("w_vs_c" = "Warmed-only", "p_vs_c" = "Perturbed-only", "wp_vs_c" = "Combined")) +
+    scale_y_continuous( breaks = scales::pretty_breaks(n = 3), 
                         expand = expansion(mult = c(0.05, 0.1)) ) +
     
     
-    labs(x = NULL, y = NULL, color = NULL, title = "Differences at pre-sampling") +
+    labs(x = NULL, y = NULL, color = NULL) +
     
-    gg_RR_theme +
+    #gg_RR_theme +
     theme(
       strip.background   = element_blank(),
       strip.placement    = "outside",
@@ -358,7 +350,11 @@ source("code/palettes_labels.R")
       legend.text        = element_text(size = 14, face = "plain")
     )
   
+  print(gg_s0)
   
-  
-  
+}
+
+
+ggsave("results/SAMPLING_0.png", plot = gg_s0, dpi = 600)
+#ggsave("results/SAMPLING_=.svg", plot = gg_s0, dpi = 600)  
   

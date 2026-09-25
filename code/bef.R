@@ -55,8 +55,8 @@ arkaute_no0 |>
   facet_wrap(~treatment, ncol = 4, scales = "free_x",
              labeller = as_labeller(c(
                c     = "Control",
-               p    = "Perturbation",
-               w = "Warming",
+               p    = "Perturbed-only",
+               w = "Warmed-only",
                wp = "Combined"))) +
   geom_point(size = 4, alpha = 0.8) +
   geom_smooth(method = "lm", formula = y ~ x) +
@@ -109,8 +109,8 @@ arkaute_no0 |>
   facet_wrap(~treatment, ncol = 4, scales = "free_x",
              labeller = as_labeller(c(
                c     = "Control",
-               p    = "Perturbation",
-               w = "Warming",
+               p    = "Perturbed-only",
+               w = "Warmed-only",
                wp = "Combined"))) +
   geom_point(size = 2, alpha = 0.6) +
   geom_smooth(method = "lm", formula = y ~ x) +
@@ -169,6 +169,8 @@ BEF_sampling +
   plot_layout(guides = "collect", ncol = 1) +
   plot_annotation(theme = theme(legend.position = "bottom"),
                   tag_levels = 'A',)
+
+print(gg_BEF)
 
 
 
