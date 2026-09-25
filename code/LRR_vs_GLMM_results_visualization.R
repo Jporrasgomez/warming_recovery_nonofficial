@@ -64,7 +64,6 @@ model_dyn <- full_join(glmm_dynamics, lrr_table_dyn) |>
     effect_sign, variable.bis, variable_model)
 
 ################### RESULTS COMPARISON VISUALIZATION ###########################
-
 gg_wpp_time<- 
   model_agg |> 
   filter(eff_descriptor == "wp_vs_p") |> 
@@ -75,7 +74,6 @@ gg_wpp_time<-
   scale_color_manual(values = palette_significance) +
   scale_shape_manual(values = shape_significance) +
   labs(title = "Warming effect on recovery (wp vs p)",
-       subtitle = "Model: variable ~ treatment * sampling + ar(sampling) + (1 | plot)",
        x = "Statistical analysis", y = NULL,
        shape = "Sign of effect", color = "Effect significance")
 print(gg_wpp_time)
@@ -90,7 +88,6 @@ gg_pc_time <-
   scale_color_manual(values = palette_significance) +
   scale_shape_manual(values = shape_significance) +
   labs(title = "Perturbation effect (p vs c)",
-       subtitle = "Model: variable ~ treatment * sampling + ar(sampling) + (1 | plot)",
        x = "Statistical analysis", y = NULL,
        shape = "Sign of effect", color = "Effect significance")
 print(gg_pc_time)
@@ -106,7 +103,6 @@ gg_wc_time <-
   scale_color_manual(values = palette_significance) +
   scale_shape_manual(values = shape_significance) +
   labs(title = "Warming effect on assembly (w vs c)",,
-       subtitle = "Model: variable ~ treatment * sampling + ar(sampling) + (1 | plot)",
        x = "Statistical analysis", y = NULL,
        shape = "Sign of effect", color = "Effect significance")
 print(gg_wc_time)
@@ -121,7 +117,6 @@ gg_wpc_time <-
   scale_color_manual(values = palette_significance) +
   scale_shape_manual(values = shape_significance) +
   labs(title = "Combined effect (wp vs c)",
-       subtitle = "Model: variable ~ treatment * sampling + ar(sampling) + (1 | plot)",
        x = "Statistical analysis", y = NULL,
        shape = "Sign of effect", color = "Effect significance")
 print(gg_wpc_time)
@@ -150,7 +145,6 @@ gg_wpp_dyn <-
   scale_color_manual(values = palette_significance) +
   scale_shape_manual(values = shape_significance) +
   labs(title = "Warming effect on post-disturbance dynamics (WP vs. P)",
-       subtitle = "Model: variable ~ treatment * sampling + ar(sampling) + (1 | plot)",
        x = "Sampling", 
        y = "Variable and model",
        color = "Effect significance",
@@ -169,7 +163,6 @@ gg_pc_dyn <-
   scale_color_manual(values = palette_significance) +
   scale_shape_manual(values = shape_significance) + 
   labs(title = "Recovery (P vs. C)",
-       subtitle = "Model: variable ~ treatment * sampling + ar(sampling) + (1 | plot)",
        x = "Sampling", 
        y = "Variable and model",
        color = "Effect significance",
@@ -187,7 +180,6 @@ gg_wc_dyn <-
   scale_color_manual(values = palette_significance) +
   scale_shape_manual(values = shape_significance) +
   labs(title = "Warming effect(W vs. C)",
-       subtitle = "Model: variable ~ treatment * sampling + ar(sampling) + (1 | plot)",
        x = "Sampling", 
        y = "Variable and model",
        color = "Effect significance",
@@ -204,7 +196,6 @@ gg_wpc_dyn <-
   scale_color_manual(values = palette_significance) +
   scale_shape_manual(values = shape_significance) +
   labs(title = "Combined effect(wp/c)", 
-       subtitle = "Model: variable ~ treatment * sampling + ar(sampling) + (1 | plot)",
        x = "Sampling", 
        y = "Variable and model",
        color = "Effect significance",
@@ -217,6 +208,4 @@ print(gg_wpc_dyn)
 #ggsave("results/model_comparison_dynamics_w_vs_c.png", plot = gg_pc_dyn, dpi = 600)
 #ggsave("results/model_comparison_dynamics_p_vs_c.png", plot = gg_wc_dyn, dpi = 600)
 #ggsave("results/model_comparison_dynamics_wp_vs_c.png", plot = gg_wpc_dyn, dpi = 600)
-
-
 
