@@ -133,6 +133,7 @@ gg_eff_agg_c2 <- agg %>%
     palette   = palette_RR_CB,
     labels    = labels_RR2,
     colorline = "grey50",
+    #colorline = "#12D08C",
     breaks_axix_y = 3
   )
 
@@ -149,6 +150,7 @@ gg_eff_dynamics_c2<- dyn %>%
   ggdyn2(palette_RR_CB,
          labels_RR2, 
          "grey50",
+         #"#12D08C",
          position = position_dodge(width = 0.5),
          asterisk = 8, 
          caps = position_dodge(width = 0.5)$width,
