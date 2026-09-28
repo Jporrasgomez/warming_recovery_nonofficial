@@ -38,8 +38,6 @@ arkaute_no0 <- arkaute %>%
 
 
 
-
-
 library(ggpmisc) 
 
 

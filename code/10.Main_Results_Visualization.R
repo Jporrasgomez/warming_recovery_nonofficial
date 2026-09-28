@@ -37,6 +37,7 @@ agg <- merge(agg_LRR, agg_glmm) |>
          glmm_effect_significance = effect_significance)
 
 
+agg |>  write.csv("results/LRR_GLMM_results_agg.csv")
 
 
 dyn_glmm  <-  read.csv("results/GLMM_dyn.csv") |> select(-X) |> 
@@ -72,21 +73,33 @@ dyn <- left_join(dyn_LRR, dyn_glmm) |>
       ordered = TRUE
     ))
 
-
+dyn |>  write.csv("results/LRR_GLMM_results_dyn.csv")
 
 
 ## 2. GENERATING PLOTS ##############################################################################################################
 
-source("code/functions/gg_aggregated_function_2.R")   # Function for aggregated analysis plots
-source("code/functions/gg_dynamics_function2.R")      # Function for temporal dynamics plots
+source("code/functions/gg_aggregated_function.R")    # Function for aggregated analysis plots
+source("code/functions/gg_dynamics_function.R")      # Function for temporal dynamics plots
 
-k = 1  
+
+
+######################################################################
+########### CHANGE VALUE OF K for specific VISUALS ###################
+######################################################################
+
+#########################
+                        #
+k = 1                   #
+                        #
+#########################
+
 # k = 1: To see all variable (but biomass raw and biomass LM)
 # k = 2: biomass variables for sensitivity analysis
 # k = 3: Richness, abundance and biomass for warming effects on recovery()
 # K = 4: Evenness and functional traits for wp vs p
 
 {
+  
 # When k = 1
 labels_main_variables <- c("richness" = "Richness",            # 1
                            "abundance" = "Cover",              # 2     
