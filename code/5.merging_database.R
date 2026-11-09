@@ -31,8 +31,8 @@ arkaute <- abundance_richness %>%
   full_join(temp_vwc_data,       by = c("plot", "treatment", "date")) %>%
   full_join(biomass_mice_lm,     by = c("sampling", "plot", "treatment")) %>% 
   mutate(
-    OTC               = ifelse(treatment %in% c("w", "wp"), paste0("YES"), paste0("NO")),
-    perturbation      = ifelse(treatment %in% c("p", "wp"), paste0("YES"), paste0("NO")),
+    OTC               = ifelse(treatment %in% c("w", "wp"), paste0("OTC"), paste0("Ambient")),
+    TILLING           = ifelse(treatment %in% c("p", "wp"), paste0("Tilled"), paste0("Undisturbed")),
     date              = as.Date(date),
     year              = year(date),
     date_label        = format(date, "%b %d %y"),
@@ -41,7 +41,7 @@ arkaute <- abundance_richness %>%
     date_label_noyear = factor( date_label_noyear,levels = unique(date_label_noyear[order(date)]),ordered = TRUE)
     ) %>% 
   select(date, omw_date, one_month_window, date_label, date_label_noyear, year, sampling, plot,
-       treatment, OTC, perturbation, richness, abundance, biomass_raw, biomass_mice, biomass_mice_lm, Y_zipf, 
+       treatment, OTC, TILLING, richness, abundance, biomass_raw, biomass_mice, biomass_mice_lm, Y_zipf, 
        SLA, LDMC, leafN, mean_temperature, mean_vwc) %>% 
   select( 
     -omw_date, -one_month_window) # Removing unnecessary variables
