@@ -191,9 +191,15 @@ point_shapes <- c("c" = 16, "w" = 17, "p" = 15, "wp" = 18)
 
 palette_significance <- 
   c("significant" = "blue", "marginal" = "orange", "non-significant" = "grey")
+
+palette_significance2 <- 
+  c("p < 0.05" = "blue", "0.05 <= p < 0.10" = "orange", "Non-significant" = "grey")
+
+
 shape_significance <- c(
   "positive" = "+",  # o pch 43 / 3
   "negative" = "-"   # o pch 45
 )
+
 
 
