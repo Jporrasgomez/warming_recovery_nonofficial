@@ -177,7 +177,11 @@ emmeans_agg_list <- list()
 
 for(i in seq_along(glmm_list)) {
   em_agg <- emmeans(glmm_list[[i]], ~ OTC * TILLING, type = "response")
-  inter_df <- as.data.frame(summary(contrast(em_agg, interaction = "pairwise"), 
+  inter_df <-
+    as.data.frame(
+      # We add this list to ensure the interaction to be "WP-P" and "W-C", otherwise it would be
+      #"P-WP" and "C-W" (due to alphabetical sorting of the models (Ambient before OTC))
+      summary(contrast(em_agg, interaction = list(OTC = "revpairwise", TILLING = "pairwise")), 
                                     infer = c(TRUE, TRUE))) |> 
     mutate(variable = variables[i])
   
@@ -197,10 +201,10 @@ for(i in seq_along(glmm_list)) {
 interaction_test_agg <- bind_rows(emmeans_agg_list) |> 
   mutate(
     ecological_effect = case_when(
-      estimate_type == "difference" & estimate > 0 ~ "suppression_by_warming",
-      estimate_type == "difference" & estimate < 0 ~ "enhancement_by_warming",
-      estimate_type == "ratio"      & estimate > 1 ~ "suppression_by_warming",
-      estimate_type == "ratio"      & estimate < 1 ~ "enhancement_by_warming"
+      estimate_type == "difference" & estimate < 0 ~ "suppression_by_warming",
+      estimate_type == "difference" & estimate > 0 ~ "enhancement_by_warming",
+      estimate_type == "ratio"      & estimate < 1 ~ "suppression_by_warming",
+      estimate_type == "ratio"      & estimate > 1 ~ "enhancement_by_warming"
     ),
     significance = case_when(
       p.value < 0.05 ~ "p < 0.05",
@@ -234,7 +238,11 @@ emmeans_time_list <- list()
 
 for(i in seq_along(glmm_list)) {
   em_time <- emmeans(glmm_list[[i]], ~ OTC * TILLING | sampling, type = "response")
-  inter_time_df <- as.data.frame(summary(contrast(em_time, interaction = "pairwise"), 
+  inter_time_df <- 
+    as.data.frame(
+      # We add this list to ensure the interaction to be "WP-P" and "W-C", otherwise it would be
+      #"P-WP" and "C-W" (due to alphabetical sorting of the models (Ambient before OTC))
+      summary(contrast(em_time, interaction = list(OTC = "revpairwise", TILLING = "pairwise")), 
                                          infer = c(TRUE, TRUE))) |> 
     mutate(variable = variables[i])
   
@@ -254,10 +262,10 @@ for(i in seq_along(glmm_list)) {
 interaction_test_time <- bind_rows(emmeans_time_list) |> 
   mutate(
     ecological_effect = case_when(
-      estimate_type == "difference" & estimate > 0 ~ "suppression_by_warming",
-      estimate_type == "difference" & estimate < 0 ~ "enhancement_by_warming",
-      estimate_type == "ratio"      & estimate > 1 ~ "suppression_by_warming",
-      estimate_type == "ratio"      & estimate < 1 ~ "enhancement_by_warming"
+      estimate_type == "difference" & estimate < 0 ~ "suppression_by_warming",
+      estimate_type == "difference" & estimate > 0 ~ "enhancement_by_warming",
+      estimate_type == "ratio"      & estimate < 1 ~ "suppression_by_warming",
+      estimate_type == "ratio"      & estimate > 1 ~ "enhancement_by_warming"
     ),
     significance = case_when(
       p.value < 0.05 ~ "p < 0.05",
@@ -325,7 +333,7 @@ interaction_test_agg |>
                                 "enhancement_by_warming" = 24),
                      labels = c("suppression_by_warming" = "Suppression by warming", 
                                 "enhancement_by_warming" = "Enhancement by warming")) +
-  labs(y = "Interaction Ratio [(P / WP) / (C / W)]", x = NULL,
+  labs(y = "Interaction Ratio [(WP / P) / (W / C)]", x = NULL,
        color = "Significance", fill = "Significance",  shape = "Interaction effect") +
   theme1 +
   theme(legend.position = "right", 
@@ -350,7 +358,7 @@ interaction_test_agg |>
                                 "enhancement_by_warming" = 24),
                      labels = c("suppression_by_warming" = "Suppression by warming", 
                                 "enhancement_by_warming" = "Enhancement by warming")) +
-  labs(y = "Interaction Difference [(P - WP) - (C - W)]", x = NULL,
+  labs(y = "Interaction Difference [(WP - P) - (W - C)]", x = NULL,
        color = "Significance", fill = "Significance",  shape = "Interaction effect") +
   theme1 +
   theme(legend.position = "right", 
@@ -371,6 +379,7 @@ interaction_test_time |>
   facet_wrap(~ variable, scales = "free_y", ncol = 1) +
   geom_hline(yintercept = 1, linetype = "dashed", color = "grey50") +
   geom_vline(xintercept = 11.5, linetype = "solid", color = "grey50") +
+  #geom_path(group = 1, color = "grey50") + 
   geom_linerange(aes(ymin = lower_CL, ymax = upper_CL), alpha = 0.6, linewidth = 0.6) +
   geom_point(aes(shape = ecological_effect), size = 2.5) +
   scale_y_log10() +
