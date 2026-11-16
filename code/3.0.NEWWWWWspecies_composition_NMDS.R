@@ -267,10 +267,10 @@ gg_sp_comp_treatment <-
 print(list_sorensen)
 #View(sorensen_df)
 gg_sp_comp_dynamics
-ggsave("results/NMDS_sp_composition_dyn.png", plot = gg_sp_comp_dynamics, dpi = 600)
+#ggsave("results/NMDS_sp_composition_dyn.png", plot = gg_sp_comp_dynamics, dpi = 600)
 
 gg_sp_comp_treatment
-ggsave("results/NMDS_sp_composition_agg.png", plot = gg_sp_comp_treatment, dpi = 600)
+#ggsave("results/NMDS_sp_composition_agg.png", plot = gg_sp_comp_treatment, dpi = 600)
 
 
 
@@ -324,7 +324,7 @@ pw_adonis <- pairwise.adonis(
 
 print(pw_adonis)
 
-
+pw_adonis |>  write.csv("results/adonis_pairwise.csv")
 
 
 # Data for colonizers

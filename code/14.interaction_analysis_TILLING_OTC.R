@@ -152,11 +152,11 @@ glmm_leafN <-  glmmTMB(leafN ~ OTC * TILLING * sampling + (1 | plot),
                        dispformula = ~ treatment,
                        data = arkaute_leafN, family = gaussian())
 ### BIOMASS ###
-glmm_biomass <- glmmTMB(biomass_mice_lm ~ OTC * TILLING * sampling + mean_vwc + (1 | plot),
+glmm_biomass <- glmmTMB(biomass_mice_lm ~ OTC * TILLING * sampling  + (1 | plot),
                         dispformula = ~treatment + sampling, 
                         data = arkaute_biomass, family = Gamma(link = "log"))
 ## BIOMASS - just MICE ####
-glmm_biomass_mice <- glmmTMB(biomass_mice ~ OTC * TILLING * sampling + mean_vwc +  (1 | plot),
+glmm_biomass_mice <- glmmTMB(biomass_mice ~ OTC * TILLING * sampling +  (1 | plot),
                              dispformula = ~treatment + sampling, 
                              data = arkaute_biomass_mice,  family = Gamma(link = "log"))
 ## BIOMASS raw ##
@@ -274,6 +274,24 @@ interaction_test_time <- bind_rows(emmeans_time_list) |>
     )
   )
 
+
+# Integrating sampling dates
+
+sampling_dates <- read.csv("data/sampling_dates.csv") |> 
+  mutate(sampling          = as.factor(sampling),
+         date              = ymd(date), 
+         year              = year(date),
+         date_label        = format(date, "%b %d %y"),
+         date_label        = factor(date_label, levels = format(sort(unique(date)), "%b %d %y"), ordered = TRUE),
+         date_label_noyear = substr(as.character(date_label), 1, nchar(as.character(date_label)) - 3),
+         date_label_noyear = factor( date_label_noyear,levels = unique(date_label_noyear[order(date)]),ordered = TRUE)
+  ) |> 
+  select(sampling, date, year, date_label_noyear) |> 
+  mutate(across(where(is.character), as.factor))
+
+
+interaction_test_time <- interaction_test_time |>  left_join(sampling_dates)
+
 write.csv(interaction_test_time, "results/Interaction_test_sampling.csv", row.names = FALSE)
 
 
@@ -292,7 +310,7 @@ labels_main_variables <- c("richness" = "Richness",            # 1
                            "evenness" = "Evenness",              # 3     
                            "SLA" = "SLA",                      # 4     
                            "LDMC" = "LDMC",                    # 5     
-                           "leafN"= "LN",                      # 6     
+                           "LeafN"= "Leaf - N",                      # 6     
                            "biomass" = "Biomass"       # 7
 )    
 
@@ -325,7 +343,7 @@ interaction_test_agg |>
   facet_wrap(~ variable, scales = "free", ncol = 1) +
   geom_hline(yintercept = 1, linetype = "dashed", color = "grey50") +
   geom_linerange(aes(ymin = lower_CL, ymax = upper_CL), alpha = 0.6, linewidth = 0.6) +
-  geom_point(aes(shape = ecological_effect), size = 2.5) +
+  geom_point(aes(shape = ecological_effect), size = 4) +
   scale_y_log10() +
   scale_color_manual(values = palette_significance2) +
   scale_fill_manual(values = palette_significance2) +
@@ -351,7 +369,7 @@ interaction_test_agg |>
   facet_wrap(~ variable, scales = "free", ncol = 1) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "grey50") +
   geom_linerange(aes(ymin = lower_CL, ymax = upper_CL), alpha = 0.6, linewidth = 0.6) +
-  geom_point(aes(shape = ecological_effect), size = 2.5) +
+  geom_point(aes(shape = ecological_effect), size = 4) +
   scale_color_manual(values = palette_significance2) +
   scale_fill_manual(values = palette_significance2) +
   scale_shape_manual(values = c("suppression_by_warming" = 25, 
@@ -375,11 +393,11 @@ gg_dyn_ratio <-
 interaction_test_time |> 
   filter(estimate_type == "ratio") |> 
   sorting_function() |> 
-  ggplot(aes(x = sampling, y = estimate, color = significance, fill = significance)) +
+  ggplot(aes(x = date_label_noyear, y = estimate, color = significance, fill = significance)) +
   facet_wrap(~ variable, scales = "free_y", ncol = 1) +
   geom_hline(yintercept = 1, linetype = "dashed", color = "grey50") +
-  geom_vline(xintercept = 11.5, linetype = "solid", color = "grey50") +
-  #geom_path(group = 1, color = "grey50") + 
+  geom_vline(xintercept = 10.5, linetype = "solid", color = "grey50") +
+  geom_path(group = 1, color = "grey75") + 
   geom_linerange(aes(ymin = lower_CL, ymax = upper_CL), alpha = 0.6, linewidth = 0.6) +
   geom_point(aes(shape = ecological_effect), size = 2.5) +
   scale_y_log10() +
@@ -389,10 +407,11 @@ interaction_test_time |>
                                 "enhancement_by_warming" = 24),
                      labels = c("suppression_by_warming" = "Suppression by warming", 
                                 "enhancement_by_warming" = "Enhancement by warming")) +
-  labs(y = NULL, x = "Sampling",
+  labs(y = NULL, x = NULL,
        color = "Significance", fill = "Significance",  shape = "Interaction effect") +
   theme1 +
-  theme(legend.position = "right")
+  theme(legend.position = "right",
+        axis.text.x = element_text(angle = 45, hjust = 1))
 
 
 
@@ -400,10 +419,11 @@ gg_dyn_diff <-
 interaction_test_time |> 
   sorting_function() |> 
   filter(estimate_type == "difference") |> 
-  ggplot(aes(x = sampling, y = estimate, color = significance, fill = significance)) +
+  ggplot(aes(x = date_label_noyear, y = estimate, color = significance, fill = significance)) +
   facet_wrap(~ variable, scales = "free_y", ncol = 1) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "grey50") +
   geom_vline(xintercept = 11.5, linetype = "solid", color = "grey50") +
+  geom_path(group = 1, color = "grey75") + 
   geom_linerange(aes(ymin = lower_CL, ymax = upper_CL), alpha = 0.6, linewidth = 0.6) +
   geom_point(aes(shape = ecological_effect), size = 2.5) +
   scale_color_manual(values = palette_significance2) +
@@ -412,10 +432,11 @@ interaction_test_time |>
                                 "enhancement_by_warming" = 24),
                      labels = c("suppression_by_warming" = "Suppression by warming", 
                                 "enhancement_by_warming" = "Enhancement by warming")) +
-  labs(y = NULL, x = "Sampling",
+  labs(y = NULL, x = NULL,
        color = "Significance", fill = "Significance",  shape = "Interaction effect") +
   theme1 +
-  theme(legend.position = "right")
+  theme(legend.position = "right",
+        axis.text.x = element_text(angle = 45, hjust = 1))
 
 
 
@@ -452,11 +473,14 @@ print(interaction_test_time |>  filter(p.value <= 0.1))
 # All variables
 gg_list_ratio[[1]]
 ggsave("results/Interaction_effect_ratio.png", plot = gg_list_ratio[[1]], dpi = 600)
+ggsave("results/Interaction_effect_ratio.svg", plot = gg_list_ratio[[1]], dpi = 600)
 
 gg_list_diff[[1]]
 ggsave("results/Interaction_effect_difference.png", plot = gg_list_diff[[1]], dpi = 600)
+ggsave("results/Interaction_effect_difference.svg", plot = gg_list_diff[[1]], dpi = 600)
 
 # Biomass imputation
 gg_list_ratio[[2]]
 ggsave("results/Interaction_effect_BIOMASS_ratio.png", plot = gg_list_ratio[[2]], dpi = 600)
+ggsave("results/Interaction_effect_BIOMASS_ratio.svg", plot = gg_list_ratio[[2]], dpi = 600)
   

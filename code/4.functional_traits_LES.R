@@ -338,7 +338,7 @@ flora_abrich <- flora_abrich %>%
 
 
 
-
+# CAMBIAR ABUNDANCE MATRIX A NIVEL DE PLOT!
 
 #Abundance matrix 1: sampling level
 
@@ -516,7 +516,8 @@ print(pw_pc)
 
 
 
-########### CWM WITH ABUNDANCE VALUES AT PLOT LEVEL FOR RESPONSE RATIO ANALYSIS
+########### CWM WITH ABUNDANCE VALUES AT PLOT LEVEL FOR RESPONSE RATIO
+########### AND GLMM ANALYSIS
 # Abundance matrix 2: plot level (dynamics)
 
 abundance_matrix_dynamics <- flora_abrich %>% 

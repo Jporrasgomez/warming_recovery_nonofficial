@@ -9,7 +9,7 @@ pacman::p_load(dplyr,reshape2,tidyverse, lubridate, ggplot2, ggpubr, gridExtra,
 
 source("code/palettes_labels.R")
 
-
+{
 ## JOINING GLMM RESULTS WITH LRR RESULTS ########################################################################
 
 
@@ -83,22 +83,14 @@ source("code/functions/gg_dynamics_function.R")      # Function for temporal dyn
 
 
 
-######################################################################
-########### CHANGE VALUE OF K for specific VISUALS ###################
-######################################################################
-
-#########################
-                        #
-k = 1                   #
-                        #
-#########################
 
 # k = 1: To see all variable (but biomass raw and biomass LM)
 # k = 2: biomass variables for sensitivity analysis
 # k = 3: Richness, abundance and biomass for warming effects on recovery()
 # K = 4: Evenness and functional traits for wp vs p
 
-{
+  
+comparissons <- c("p_vs_c", "w_vs_c")
   
 # When k = 1
 labels_main_variables <- c("richness" = "Richness",            # 1
@@ -122,6 +114,16 @@ labels_other_variables_wp <- labels_main_variables[c(2,3,4,5)]
 
 labels_list <- list(labels_main_variables, labels_biomass_variables, labels_warming_recovery, labels_other_variables_wp)
 
+
+gg_control_list <- list()
+gg_wpp_list <- list()
+
+
+# Loop with K
+
+for (k in seq_along(labels_list)){
+  
+  
 lvls <- names(labels_list[[k]])
 labs <- unname(labels_list[[k]])
 
@@ -129,7 +131,7 @@ labs <- unname(labels_list[[k]])
 
 # PERTURBATION AND WARMING TREATMENTS / CONTROL ################
 
-comparissons <- c("p_vs_c", "w_vs_c")
+
 
 
 # Aggregated analysis
@@ -170,7 +172,7 @@ gg_eff_dynamics_c2<- dyn %>%
          breaks_axix_y = 3)
 
 
-gg_control <-
+gg_control_list[[k]] <-
   (gg_eff_agg_c2 + 
      gg_eff_dynamics_c2 + theme (legend.position = "none") + 
      plot_layout(guides = "collect",
@@ -216,7 +218,7 @@ gg_eff_dynamics_wp2<- dyn %>%
          breaks_axix_y = 3)
 
 
-gg_wp <-
+gg_wpp_list[[k]] <-
   (gg_eff_agg_wp2 + 
      gg_eff_dynamics_wp2 + theme (legend.position = "none") +
      plot_layout(guides = "collect",
@@ -226,33 +228,42 @@ gg_wp <-
 }
 
 
+}
 
-print(gg_control)
-print(gg_wp) 
+# All variable (but biomass raw and biomass LM)
+print(gg_control_list[[1]])
+ggsave("results/Figure_2.png", plot = gg_control_list[[1]], dpi = 600)
+ggsave("results/Figure_2.svg", plot = gg_control_list[[1]], dpi = 600)
 
 
-# All variables
-#
-#ggsave("results/Figure_2.png", plot = gg_control, dpi = 600)
-#ggsave("results/Figure_2.svg", plot = gg_control, dpi = 600)
-#ggsave("results/Figure_3.png", plot = gg_wp, dpi = 600)
-#ggsave("results/Figure_3.svg", plot = gg_wp, dpi = 600)
-#
-#
-#
-## Biomass sensitivity
-#
-#ggsave("results/Supplementary_figure_biomass_c.png", plot = gg_control, dpi = 600)
-#ggsave("results/Supplementary_figure_biomass_c.svg", plot = gg_control, dpi = 600)
-#ggsave("results/Supplementary_figure_biomass_wp.png", plot = gg_wp, dpi = 600)
-#ggsave("results/Supplementary_figure_biomass_wp.svg", plot = gg_wp, dpi = 600)
-#
-#
-#
-## Other variables WP vs P
-#
-#ggsave("results/Sup_fig_WPP.png", plot = gg_wp, dpi = 600)
-#ggsave("results/Sup_fig_WPP.svg", plot = gg_wp, dpi = 600)
-#
+# Biomass variables for sensitivity analysis
+print(gg_control_list[[2]])
+print(gg_wpp_list[[2]])
+ggsave("results/Supplementary_figure_biomass_c.png", plot = gg_control_list[[2]], dpi = 600)
+ggsave("results/Supplementary_figure_biomass_c.svg", plot = gg_control_list[[2]], dpi = 600)
+ggsave("results/Supplementary_figure_biomass_wp.png", plot = gg_wpp_list[[2]], dpi = 600)
+ggsave("results/Supplementary_figure_biomass_wp.svg", plot = gg_wpp_list[[2]], dpi = 600)
+
+
+# Only richness, abundance and biomass for warming effects on recovery()
+print(gg_wpp_list[[3]])
+ggsave("results/Figure_3.png", plot = gg_wpp_list[[3]], dpi = 600)
+ggsave("results/Figure_3.svg", plot = gg_wpp_list[[3]], dpi = 600)
+
+
+
+# Only evenness and functional traits for wp vs p
+print(gg_wpp_list[[4]])
+ggsave("results/Sup_fig_WPP.png", plot = gg_wp, dpi = 600)
+ggsave("results/Sup_fig_WPP.svg", plot = gg_wp, dpi = 600)
+
+
+
+
+# Other plots we do not use: 
+
+#print(gg_wpp_list[[1]])
+#print(gg_control_list[[3]])
+#print(gg_control_list[[4]])
 
 

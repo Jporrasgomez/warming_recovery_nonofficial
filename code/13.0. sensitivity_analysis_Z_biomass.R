@@ -704,11 +704,10 @@ library(emmeans)
 
 
 
-# Mean vwc will be used for all z coeff in biomass FINAL and for z_2_3 in just MICE 
+# All biomass levels follow the same GLMM structure
 
 for(i in seq_along(biomass_list)){
- 
-  if(i %in% c(1, 2, 4, 5, 7)){ # Model without mean_vwc inclusion as continous covariate for biomass raw (all z coeff) and biomass mice for z = 1/2 and z = 5/6
+
   model <- glmmTMB(biomass ~ treatment * sampling + (1 | plot),
           dispformula = ~ treatment + sampling, 
           data = biomass_list[[i]],  family = Gamma(link = "log")) 
@@ -721,23 +720,6 @@ for(i in seq_along(biomass_list)){
            estimate_type = "ratio") |> 
     rename(estimate = ratio)|> 
     select(-null)
-  } else {
-    
-    model <- glmmTMB(biomass ~ treatment * sampling + mean_vwc + (1 | plot), # Inclusion of mean_vwc for biomass mice and biomas mice LM
-                     dispformula = ~ treatment + sampling, 
-                     data = biomass_list[[i]],  family = Gamma(link = "log")) 
-    
-    em_treat_biomass <- emmeans(model, ~ treatment, type = "response")
-    
-    glmm_results[[i]] <- as.data.frame(pairs(em_treat_biomass, adjust = "tukey")) |>
-      mutate(biomass_level = paste0(unique(biomass_list[[i]]$biomass_level)),
-             z_value = paste0(unique(biomass_list[[i]]$z)),
-             estimate_type = "ratio") |> 
-      rename(estimate = ratio)|> 
-      select(-null)
-    
-  }
-  
 }
 
 
@@ -763,7 +745,7 @@ z_levels <- c("z_1_2", "z_5_6", "z_2_3_original")
 biomass_no0 <- biomass_data_all %>% 
   filter(sampling != "0")
 
-source("code/functions/eff_size_LRR_function_delta.R")
+source("code/functions/LRR_agg.R")
 
 list_eff <- list()
 counter = 0

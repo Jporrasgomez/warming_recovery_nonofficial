@@ -149,7 +149,7 @@ source("code/palettes_labels.R")
   em_time_leafN <- emmeans(glmm_leafN, ~ treatment | sampling, type = "response")
   
   ### BIOMASS ###
-  glmm_biomass <- glmmTMB(biomass_mice_lm ~ treatment * sampling + mean_vwc + (1 | plot),
+  glmm_biomass <- glmmTMB(biomass_mice_lm ~ treatment * sampling + (1 | plot),
                           dispformula = ~treatment + sampling, 
                           data = arkaute_biomass, family = Gamma(link = "log"))
   em_treat_biomass <- emmeans(glmm_biomass, ~ treatment, type = "response")
@@ -158,7 +158,7 @@ source("code/palettes_labels.R")
   
   ## BIOMASS - just MICE ####
   
-  glmm_biomass_mice <- glmmTMB(biomass_mice ~ treatment * sampling + mean_vwc +  (1 | plot),
+  glmm_biomass_mice <- glmmTMB(biomass_mice ~ treatment * sampling +  (1 | plot),
                                 dispformula = ~treatment + sampling, 
                                 data = arkaute_biomass_mice,  family = Gamma(link = "log"))
   em_treat_biomass_mice <- emmeans(glmm_biomass_mice, ~ treatment, type = "response")
