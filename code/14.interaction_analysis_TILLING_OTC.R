@@ -326,140 +326,142 @@ sorting_function <- function(data){
 
 labels_list <- list(labels_main_variables, labels_biomass_variables)
 
-gg_list_ratio <- list()
-gg_list_diff <- list()
+gg_ratio_list <- list()
+gg_diff_list <- list()
 
 for (k in seq_along(labels_list)){
   
 lvls <- names(labels_list[[k]])
 labs <- unname(labels_list[[k]])
 
-
-gg_agg_ratio <- 
-interaction_test_agg |> 
+gg_agg_ratio <- interaction_test_agg |> 
   filter(estimate_type == "ratio") |> 
   sorting_function() |>  
   ggplot(aes(x = variable, y = estimate, color = significance, fill = significance)) +
-  facet_wrap(~ variable, scales = "free", ncol = 1) +
+  facet_wrap(~ variable, scales = "free", ncol = 1, strip.position = "left") +
   geom_hline(yintercept = 1, linetype = "dashed", color = "grey50") +
-  geom_linerange(aes(ymin = lower_CL, ymax = upper_CL), alpha = 0.6, linewidth = 0.6) +
+  geom_linerange(aes(ymin = lower_CL, ymax = upper_CL), alpha = 1, linewidth = 1) +
   geom_point(aes(shape = ecological_effect), size = 4) +
   scale_y_log10() +
   scale_color_manual(values = palette_significance2) +
   scale_fill_manual(values = palette_significance2) +
-  scale_shape_manual(values = c("suppression_by_warming" = 25, 
-                                "enhancement_by_warming" = 24),
-                     labels = c("suppression_by_warming" = "Suppression by warming", 
-                                "enhancement_by_warming" = "Enhancement by warming")) +
-  labs(y = "Interaction Ratio [(WP / P) / (W / C)]", x = NULL,
-       color = "Significance", fill = "Significance",  shape = "Interaction effect") +
+  scale_shape_manual(
+    values = shape_values,
+    labels = shape_labels
+  ) +
+  labs(
+    y = "Interaction Ratio [(WP / P) / (W / C)] (log scale)",
+    #y = NULL, 
+    x = NULL,
+    color = "Significance", fill = "Significance", shape = "Interaction effect"
+  ) +
   theme1 +
-  theme(legend.position = "right", 
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank(),
-        strip.text = element_text(color = "white"),
-        )
+  theme(
+    legend.position = "none", 
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    #strip.text = element_text(color = "white")
+    strip.placement    = "outside",
+    strip.text         = element_text(face = "bold", size = 12),
+    strip.text.y.left  = element_text(face = "bold"),
+  )
 
-
-gg_agg_diff <- 
-interaction_test_agg |> 
+gg_agg_diff <- interaction_test_agg |> 
   filter(estimate_type == "difference") |> 
   sorting_function() |> 
   ggplot(aes(x = variable, y = estimate, color = significance, fill = significance)) +
-  facet_wrap(~ variable, scales = "free", ncol = 1) +
+  facet_wrap(~ variable, scales = "free", ncol = 1, strip.position = "left") +
   geom_hline(yintercept = 0, linetype = "dashed", color = "grey50") +
-  geom_linerange(aes(ymin = lower_CL, ymax = upper_CL), alpha = 0.6, linewidth = 0.6) +
+  geom_linerange(aes(ymin = lower_CL, ymax = upper_CL), alpha = 1, linewidth = 1) +
   geom_point(aes(shape = ecological_effect), size = 4) +
   scale_color_manual(values = palette_significance2) +
   scale_fill_manual(values = palette_significance2) +
-  scale_shape_manual(values = c("suppression_by_warming" = 25, 
-                                "enhancement_by_warming" = 24),
-                     labels = c("suppression_by_warming" = "Suppression by warming", 
-                                "enhancement_by_warming" = "Enhancement by warming")) +
-  labs(y = "Interaction Difference [(WP - P) - (W - C)]", x = NULL,
-       color = "Significance", fill = "Significance",  shape = "Interaction effect") +
+  scale_shape_manual(
+    values = shape_values,
+    labels = shape_labels
+  ) +
+  labs(
+    y = "Interaction Difference [(WP - P) - (W - C)]",
+    #y = NULL, 
+    x = NULL,
+    color = "Significance", fill = "Significance", shape = "Interaction effect"
+  ) +
   theme1 +
-  theme(legend.position = "right", 
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank(),
-        strip.text = element_text(color = "white"),
+  theme(
+    legend.position = "none", 
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    #strip.text = element_text(color = "white")
+    strip.placement    = "outside",
+    strip.text         = element_text(face = "bold", size = 12),
+    strip.text.y.left  = element_text(face = "bold"),
   )
 
-
-
-
-
-gg_dyn_ratio <- 
-interaction_test_time |> 
+gg_dyn_ratio <- interaction_test_time |> 
   filter(estimate_type == "ratio") |> 
   sorting_function() |> 
   ggplot(aes(x = date_label_noyear, y = estimate, color = significance, fill = significance)) +
   facet_wrap(~ variable, scales = "free_y", ncol = 1) +
   geom_hline(yintercept = 1, linetype = "dashed", color = "grey50") +
   geom_vline(xintercept = 10.5, linetype = "solid", color = "grey50") +
-  geom_path(group = 1, color = "grey75") + 
-  geom_linerange(aes(ymin = lower_CL, ymax = upper_CL), alpha = 0.6, linewidth = 0.6) +
+  geom_linerange(aes(ymin = lower_CL, ymax = upper_CL), alpha = 1, linewidth = 0.6) +
+  geom_path(group = 1, color = "grey50") + 
   geom_point(aes(shape = ecological_effect), size = 2.5) +
   scale_y_log10() +
   scale_color_manual(values = palette_significance2) +
   scale_fill_manual(values = palette_significance2) +
-  scale_shape_manual(values = c("suppression_by_warming" = 25, 
-                                "enhancement_by_warming" = 24),
-                     labels = c("suppression_by_warming" = "Suppression by warming", 
-                                "enhancement_by_warming" = "Enhancement by warming")) +
-  labs(y = NULL, x = NULL,
-       color = "Significance", fill = "Significance",  shape = "Interaction effect") +
+  scale_shape_manual(
+    values = shape_values,
+    labels = shape_labels
+  ) +
+  labs(
+    y = NULL, x = NULL,
+    color = "Significance", fill = "Significance", shape = "Interaction effect"
+  ) +
   theme1 +
   theme(legend.position = "right",
-        axis.text.x = element_text(angle = 45, hjust = 1))
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        strip.text = element_blank(), 
+        strip.background = element_blank())
 
 
-
-gg_dyn_diff <- 
-interaction_test_time |> 
+gg_dyn_diff <- interaction_test_time |> 
   sorting_function() |> 
   filter(estimate_type == "difference") |> 
   ggplot(aes(x = date_label_noyear, y = estimate, color = significance, fill = significance)) +
   facet_wrap(~ variable, scales = "free_y", ncol = 1) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "grey50") +
-  geom_vline(xintercept = 11.5, linetype = "solid", color = "grey50") +
-  geom_path(group = 1, color = "grey75") + 
-  geom_linerange(aes(ymin = lower_CL, ymax = upper_CL), alpha = 0.6, linewidth = 0.6) +
+  geom_vline(xintercept = 10.5, linetype = "solid", color = "grey50") +
+  geom_linerange(aes(ymin = lower_CL, ymax = upper_CL), alpha = 1, linewidth = 0.6) +
+  geom_path(group = 1, color = "grey50") + 
   geom_point(aes(shape = ecological_effect), size = 2.5) +
   scale_color_manual(values = palette_significance2) +
   scale_fill_manual(values = palette_significance2) +
-  scale_shape_manual(values = c("suppression_by_warming" = 25, 
-                                "enhancement_by_warming" = 24),
-                     labels = c("suppression_by_warming" = "Suppression by warming", 
-                                "enhancement_by_warming" = "Enhancement by warming")) +
-  labs(y = NULL, x = NULL,
-       color = "Significance", fill = "Significance",  shape = "Interaction effect") +
+  scale_shape_manual(
+    values = shape_values,
+    labels = shape_labels
+  ) +
+  labs(
+    y = NULL, x = NULL,
+    color = "Significance", fill = "Significance", shape = "Interaction effect"
+  ) +
   theme1 +
   theme(legend.position = "right",
-        axis.text.x = element_text(angle = 45, hjust = 1))
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        strip.text = element_blank(), 
+        strip.background = element_blank())
 
 
 
-
-
-
-gg_list_ratio[[k]] <- 
-
-  gg_agg_ratio + theme (legend.position = "none") +
-     gg_dyn_ratio + 
-     plot_layout(guides = "collect",
-                 widths = c(1, 3)) +
+gg_ratio_list[[k]] <- gg_agg_ratio + 
+  gg_dyn_ratio + 
+  plot_layout(guides = "collect", widths = c(1, 3)) +
   plot_annotation(theme = theme(legend.position = "bottom"))
 
-                  
-gg_list_diff[[k]] <- 
-  gg_agg_diff + theme (legend.position = "none") +
-    gg_dyn_diff + 
-    plot_layout(guides = "collect",
-                widths = c(1, 3)) +
-    plot_annotation(theme = theme(legend.position = "bottom"))
-
-
+gg_diff_list[[k]] <- gg_agg_diff + 
+  gg_dyn_diff + 
+  plot_layout(guides = "collect", widths = c(1, 3)) +
+  plot_annotation(theme = theme(legend.position = "bottom"))
 
 }
 
@@ -471,16 +473,16 @@ print(interaction_test_anova |>  filter(factor %in% ("OTC:TILLING:sampling")))
 print(interaction_test_time |>  filter(p.value <= 0.1))
 
 # All variables
-gg_list_ratio[[1]]
-ggsave("results/Interaction_effect_ratio.png", plot = gg_list_ratio[[1]], dpi = 600)
-ggsave("results/Interaction_effect_ratio.svg", plot = gg_list_ratio[[1]], dpi = 600)
+gg_ratio_list[[1]]
+ggsave("results/Interaction_effect_ratio.png", plot = gg_ratio_list[[1]], dpi = 600)
+ggsave("results/Interaction_effect_ratio.svg", plot = gg_ratio_list[[1]], dpi = 600)
 
-gg_list_diff[[1]]
-ggsave("results/Interaction_effect_difference.png", plot = gg_list_diff[[1]], dpi = 600)
-ggsave("results/Interaction_effect_difference.svg", plot = gg_list_diff[[1]], dpi = 600)
+gg_diff_list[[1]]
+ggsave("results/Interaction_effect_difference.png", plot = gg_diff_list[[1]], dpi = 600)
+ggsave("results/Interaction_effect_difference.svg", plot = gg_diff_list[[1]], dpi = 600)
 
 # Biomass imputation
-gg_list_ratio[[2]]
-ggsave("results/Interaction_effect_BIOMASS_ratio.png", plot = gg_list_ratio[[2]], dpi = 600)
-ggsave("results/Interaction_effect_BIOMASS_ratio.svg", plot = gg_list_ratio[[2]], dpi = 600)
+gg_ratio_list[[2]]
+ggsave("results/Interaction_effect_BIOMASS_ratio.png", plot = gg_ratio_list[[2]], dpi = 600)
+ggsave("results/Interaction_effect_BIOMASS_ratio.svg", plot = gg_ratio_list[[2]], dpi = 600)
   

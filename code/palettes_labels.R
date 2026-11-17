@@ -203,3 +203,10 @@ shape_significance <- c(
 
 
 
+shape_values <- c("suppression_by_warming" = 25, "enhancement_by_warming" = 24)
+shape_labels <-  c("suppression_by_warming" = "Suppression by warming",
+                   "enhancement_by_warming" = "Enhancement by warming")
+
+
+
+
