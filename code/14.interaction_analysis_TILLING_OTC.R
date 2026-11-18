@@ -130,39 +130,52 @@ variables <- c("richness", "abundance", "evenness", "SLA", "LDMC", "LeafN",
 ############# GLMM MODELS ##############################################################
 ## Richness ## 
 glmm_richness <- glmmTMB( richness ~ OTC * TILLING * sampling + (1 | plot),
-                          data = arkaute_richness,family = genpois())
+                          data = arkaute_richness,family = genpois(),
+                          contrasts = list(OTC = "contr.sum", TILLING = "contr.sum", sampling = "contr.sum"))
+#contrasts = list(OTC = "contr.sum", TILLING = "contr.sum", sampling = "contr.sum")
+# if we add this line  in the glmm it makes ANOVA Type III OTC:TILLING to be inferred globally, otherwise it uses only the first sampling
+
+
 ## ABUNDANCE ##
 # We use gaussian because it tolerates 0 (present in sampling 1 for treatments p and wp)
 glmm_abundance <- glmmTMB(abundance ~ OTC * TILLING * sampling + (1 | plot),
-                          data = arkaute_abundance, family = gaussian())
+                          data = arkaute_abundance, family = gaussian(),
+                          contrasts = list(OTC = "contr.sum", TILLING = "contr.sum", sampling = "contr.sum"))
 ## EVENNESS ##
 glmm_evenness <- glmmTMB(Y_zipf ~ OTC * TILLING * sampling + (1 | plot),
                          dispformula = ~treatment + sampling, 
-                         data = arkaute_evenness, family = gaussian())
+                         data = arkaute_evenness, family = gaussian(),
+                         contrasts = list(OTC = "contr.sum", TILLING = "contr.sum", sampling = "contr.sum"))
 ## SLA ##
 glmm_sla <- glmmTMB(SLA ~ OTC * TILLING * sampling + (1 | plot), 
                     dispformula = ~ treatment, 
-                    data = arkaute_sla, family = gaussian())
+                    data = arkaute_sla, family = gaussian(),
+                    contrasts = list(OTC = "contr.sum", TILLING = "contr.sum", sampling = "contr.sum"))
 ## LDMC ##
 glmm_LDMC <- glmmTMB(LDMC ~ OTC * TILLING * sampling + (1 | plot), 
                      dispformula = ~ treatment, 
-                     data = arkaute_ldmc, family = gaussian())
+                     data = arkaute_ldmc, family = gaussian(),
+                     contrasts = list(OTC = "contr.sum", TILLING = "contr.sum", sampling = "contr.sum"))
 ## Leaf nitrogen ##
 glmm_leafN <-  glmmTMB(leafN ~ OTC * TILLING * sampling + (1 | plot),
                        dispformula = ~ treatment,
-                       data = arkaute_leafN, family = gaussian())
+                       data = arkaute_leafN, family = gaussian(),
+                       contrasts = list(OTC = "contr.sum", TILLING = "contr.sum", sampling = "contr.sum"))
 ### BIOMASS ###
 glmm_biomass <- glmmTMB(biomass_mice_lm ~ OTC * TILLING * sampling  + (1 | plot),
                         dispformula = ~treatment + sampling, 
-                        data = arkaute_biomass, family = Gamma(link = "log"))
+                        data = arkaute_biomass, family = Gamma(link = "log"),
+                        contrasts = list(OTC = "contr.sum", TILLING = "contr.sum", sampling = "contr.sum"))
 ## BIOMASS - just MICE ####
 glmm_biomass_mice <- glmmTMB(biomass_mice ~ OTC * TILLING * sampling +  (1 | plot),
                              dispformula = ~treatment + sampling, 
-                             data = arkaute_biomass_mice,  family = Gamma(link = "log"))
+                             data = arkaute_biomass_mice,  family = Gamma(link = "log"),
+                             contrasts = list(OTC = "contr.sum", TILLING = "contr.sum", sampling = "contr.sum"))
 ## BIOMASS raw ##
 glmm_biomass_raw <- glmmTMB(biomass_raw ~ OTC * TILLING * sampling + (1 | plot),
                             dispformula = ~treatment + sampling, 
-                            data = arkaute_biomass_raw,  family = Gamma(link = "log"))
+                            data = arkaute_biomass_raw,  family = Gamma(link = "log"),
+                            contrasts = list(OTC = "contr.sum", TILLING = "contr.sum", sampling = "contr.sum"))
 
 glmm_list <- list(glmm_richness, glmm_abundance, glmm_evenness, glmm_sla, 
                   glmm_LDMC, glmm_leafN, glmm_biomass, glmm_biomass_mice, 
@@ -225,6 +238,17 @@ for(i in seq_along(glmm_list)) {
   aov$factor <- rownames(aov)
   rownames(aov) <- NULL
   anova_list[[i]] <- aov |> mutate(variable = variables[i])
+}
+
+anova_list <- list()
+
+for(i in seq_along(glmm_list)) {
+  
+  aov_df <- as.data.frame(Anova(glmm_list[[i]], type = "III"))
+  
+  anova_list[[i]] <- aov_df |> 
+    tibble::rownames_to_column(var = "factor") |> 
+    mutate(variable = variables[i])
 }
 
 interaction_test_anova <- bind_rows(anova_list)
@@ -468,6 +492,7 @@ gg_diff_list[[k]] <- gg_agg_diff +
 }
 
 print(interaction_test_agg)
+tail(interaction_test_time)
 print(interaction_test_anova)
 print(interaction_test_anova |>  filter(factor %in% ("OTC:TILLING:sampling")))
 print(interaction_test_time |>  filter(p.value <= 0.1))
